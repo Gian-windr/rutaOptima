@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
@@ -26,7 +27,7 @@ public class OrderDTO {
 
     @NotNull(message = "La fecha de entrega es obligatoria")
     @FutureOrPresent(message = "La fecha de entrega debe ser presente o futura")
-    private LocalDate fechaEntrega;
+    private Instant fechaEntrega;
 
     @NotNull(message = "La cantidad es obligatoria")
     @DecimalMin(value = "0.01", message = "La cantidad debe ser mayor que 0")
@@ -39,8 +40,8 @@ public class OrderDTO {
     private BigDecimal peso;
 
     private String estado = "PENDIENTE";
-    private LocalTime ventanaHorariaInicio;
-    private LocalTime ventanaHorariaFin;
+    private Instant ventanaHorariaInicio;
+    private Instant ventanaHorariaFin;
     private Integer prioridad = 1;
     
     @Min(value = 0, message = "El tiempo de servicio no puede ser negativo")

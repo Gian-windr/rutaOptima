@@ -4,10 +4,10 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import lombok.*;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 
 /**
  * Entidad que representa un pedido a entregar
@@ -38,7 +38,7 @@ public class Order {
     @NotNull(message = "La fecha de entrega es obligatoria")
     @FutureOrPresent(message = "La fecha de entrega no puede ser en el pasado")
     @Column(name = "fecha_entrega", nullable = false)
-    private LocalDate fechaEntrega;
+    private Instant fechaEntrega;
 
     @NotNull(message = "La cantidad es obligatoria")
     @DecimalMin(value = "0.01", message = "La cantidad debe ser mayor que 0")
@@ -59,10 +59,10 @@ public class Order {
     private String estado = "PENDIENTE";
 
     @Column(name = "ventana_horaria_inicio")
-    private LocalTime ventanaHorariaInicio;
+    private Instant ventanaHorariaInicio;
 
     @Column(name = "ventana_horaria_fin")
-    private LocalTime ventanaHorariaFin;
+    private Instant ventanaHorariaFin;
 
     @Min(value = 1, message = "La prioridad debe ser al menos 1")
     @Column
@@ -78,15 +78,15 @@ public class Order {
     private String notas;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createdAt = Instant.now();
+        updatedAt = Instant.now();
         if (estado == null) {
             estado = "PENDIENTE";
         }
@@ -94,7 +94,7 @@ public class Order {
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = Instant.now();
     }
 
     /**
@@ -107,22 +107,52 @@ public class Order {
     /**
      * Usa la ventana horaria del pedido, si no existe usa la del cliente
      */
-    public LocalDateTime getVentanaHorariaInicioEfectiva() {
+    public Instant getVentanaHorariaInicioEfectiva() {
         if (ventanaHorariaInicio != null) {
-            return ventanaHorariaInicio.atDate(LocalDate.now()); // Convierte LocalTime a LocalDateTime
+            return ventanaHorariaInicio;
         }
-        if (customer != null && customer.getVentanaHorariaInicio() != null) {
-            return customer.getVentanaHorariaInicio().atDate(LocalDate.now()); // Convierte LocalTime a LocalDateTime
-        }
-        return null;
+        return resolveCustomerTime("getVentanaHorariaInicio");
     }
 
-    public LocalDateTime getVentanaHorariaFinEfectiva() {
+    public Instant getVentanaHorariaFinEfectiva() {
         if (ventanaHorariaFin != null) {
-            return ventanaHorariaFin.atDate(LocalDate.now()); // Convierte LocalTime a LocalDateTime
+            return ventanaHorariaFin;
         }
-        if (customer != null && customer.getVentanaHorariaFin() != null) {
-            return customer.getVentanaHorariaFin().atDate(LocalDate.now()); // Convierte LocalTime a LocalDateTime
+        return resolveCustomerTime("getVentanaHorariaFin");
+    }
+
+    private Instant resolveCustomerTime(String getterName) {
+        if (customer == null) {
+            return null;
+        }
+        try {
+            Method m = customer.getClass().getMethod(getterName);
+            Object val = m.invoke(customer);
+            if (val == null) {
+                return null;
+            }
+            // Si el customer ya devuelve Instant
+            if (val instanceof Instant) {
+                return (Instant) val;
+            }
+            // Si devuelve LocalDateTime
+            if (val instanceof LocalDateTime) {
+                return ((LocalDateTime) val).atZone(ZoneId.systemDefault()).toInstant();
+            }
+            // Si devuelve LocalDate (usar inicio del día)
+            if (val instanceof LocalDate) {
+                return ((LocalDate) val).atStartOfDay(ZoneId.systemDefault()).toInstant();
+            }
+            // Si devuelve LocalTime, combinar con la fecha de entrega (o hoy)
+            if (val instanceof LocalTime) {
+                LocalDate date = (fechaEntrega != null)
+                        ? LocalDateTime.ofInstant(fechaEntrega, ZoneId.systemDefault()).toLocalDate()
+                        : LocalDate.now(ZoneId.systemDefault());
+                LocalDateTime ldt = LocalDateTime.of(date, (LocalTime) val);
+                return ldt.atZone(ZoneId.systemDefault()).toInstant();
+            }
+        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+            // Si falla la resolución por reflexión, devolver null silenciosamente
         }
         return null;
     }

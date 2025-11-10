@@ -3,7 +3,7 @@ package com.customer.rutaOptima.optimization.domain;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Representa una ubicación a visitar (cliente con pedido)
@@ -21,8 +21,8 @@ public class Location {
     private Double demandaCantidad;
     private Double demandaVolumen;
     private Double demandaPeso;
-    private LocalDateTime ventanaInicio;
-    private LocalDateTime ventanaFin;
+    private Instant ventanaInicio;
+    private Instant ventanaFin;
     private Integer tiempoServicioMin = 10; // Tiempo de servicio por defecto
     private Integer prioridad = 1;
 

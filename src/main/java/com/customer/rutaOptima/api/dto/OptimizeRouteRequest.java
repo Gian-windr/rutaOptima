@@ -6,7 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -20,7 +20,7 @@ public class OptimizeRouteRequest {
 
     @NotNull(message = "La fecha es obligatoria")
     @FutureOrPresent(message = "La fecha debe ser presente o futura")
-    private LocalDate fecha;
+    private Instant fecha;
 
     @NotEmpty(message = "Debe especificar al menos un vehículo")
     private List<Long> vehicleIds;

@@ -232,8 +232,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -342,8 +341,8 @@ public class RouteOptimizationService {
                         .vehicle(vehicleRepository.findById(vehicleId).orElseThrow())
                         .order(orderRepository.findById(visit.getLocation().getOrderId()).orElseThrow())
                         .secuencia(sequence++)
-                        .eta(LocalDateTime.of(routePlan.getFecha(), visit.getArrivalTime()))
-                        .etd(LocalDateTime.of(routePlan.getFecha(), visit.getDepartureTime()))
+                        .eta(Instant.of(routePlan.getFecha(), visit.getArrivalTime()))
+                        .etd(Instant.of(routePlan.getFecha(), visit.getDepartureTime()))
                         .distanciaKmDesdeAnterior(BigDecimal.valueOf(visit.getDistanciaDesdeAnteriorKm()))
                         .tiempoViajeMínDesdeAnterior(visit.getTiempoViajeDesdeAnteriorMinutos(1.0))
                         .cargaAcumuladaCantidad(visit.getCargaAcumuladaCantidad())

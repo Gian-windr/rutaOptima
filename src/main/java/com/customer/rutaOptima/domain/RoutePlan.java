@@ -5,8 +5,7 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,7 +41,7 @@ public class RoutePlan {
 
     @NotNull(message = "La fecha es obligatoria")
     @Column(nullable = false)
-    private LocalDate fecha;
+    private Instant fecha;
 
     @NotNull(message = "El estado es obligatorio")
     @Enumerated(EnumType.STRING)
@@ -90,10 +89,10 @@ public class RoutePlan {
     private Integer maxOptimizationTimeSeconds;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     @OneToMany(mappedBy = "routePlan", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -101,8 +100,8 @@ public class RoutePlan {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createdAt = Instant.now();
+        updatedAt = Instant.now();
         if (estado == null) {
             estado = Estado.CREATED;
         }
@@ -110,7 +109,7 @@ public class RoutePlan {
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = Instant.now();
     }
 
     /**

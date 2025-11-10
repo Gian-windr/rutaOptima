@@ -5,7 +5,7 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Entidad que representa un evento de tráfico para re-optimización
@@ -30,7 +30,7 @@ public class TrafficEvent {
     @NotNull(message = "La fecha y hora del evento es obligatoria")
     @Column(name = "fecha_hora", nullable = false)
     @Builder.Default
-    private LocalDateTime fechaHora = LocalDateTime.now();
+    private Instant fechaHora = Instant.now();
 
     @NotBlank(message = "La descripción del evento es obligatoria")
     @Column(nullable = false, columnDefinition = "TEXT")
@@ -64,13 +64,13 @@ public class TrafficEvent {
     private Boolean activo = true;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        createdAt = Instant.now();
         if (fechaHora == null) {
-            fechaHora = LocalDateTime.now();
+            fechaHora = Instant.now();
         }
     }
 

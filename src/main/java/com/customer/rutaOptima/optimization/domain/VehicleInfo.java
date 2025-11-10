@@ -2,7 +2,8 @@ package com.customer.rutaOptima.optimization.domain;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import java.time.LocalTime;
+
+import java.time.Instant;
 
 /**
  * Representa un vehículo en el problema de optimización
@@ -20,8 +21,8 @@ public class VehicleInfo {
     private Double costoKm;
     private Double depotLatitud;
     private Double depotLongitud;
-    private LocalTime jornadaInicio;
-    private LocalTime jornadaFin;
+    private Instant jornadaInicio;
+    private Instant jornadaFin;
 
     /**
      * Calcula la distancia desde el depósito a una ubicación

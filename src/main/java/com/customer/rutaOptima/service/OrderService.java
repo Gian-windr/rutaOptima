@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -46,7 +47,7 @@ public class OrderService {
         }
 
         // Validar fecha no sea en el pasado
-        if (order.getFechaEntrega().isBefore(LocalDate.now())) {
+        if (order.getFechaEntrega().isBefore(Instant.now())) {
             throw new BusinessException(
                     "La fecha de entrega no puede ser en el pasado");
         }
@@ -68,7 +69,7 @@ public class OrderService {
     /**
      * Valida que los pedidos de clientes nuevos cumplan con la anticipación mínima de 5 días
      */
-    private void validateNewCustomerLeadTime(LocalDate fechaEntrega, Customer customer) {
+    private void validateNewCustomerLeadTime(Instant fechaEntrega, Customer customer) {
         LocalDate fechaActual = LocalDate.now();
         long diasAnticipacion = ChronoUnit.DAYS.between(fechaActual, fechaEntrega);
 
@@ -90,12 +91,12 @@ public class OrderService {
     }
 
     @Transactional(readOnly = true)
-    public List<Order> findByFecha(LocalDate fecha) {
+    public List<Order> findByFecha(Instant fecha) {
         return orderRepository.findByFechaEntrega(fecha);
     }
 
     @Transactional(readOnly = true)
-    public List<Order> findPendingOrdersByFecha(LocalDate fecha) {
+    public List<Order> findPendingOrdersByFecha(Instant fecha) {
         return orderRepository.findPendingOrdersWithCustomerByFecha(fecha);
     }
 

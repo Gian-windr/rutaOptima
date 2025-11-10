@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 /**
@@ -18,8 +18,8 @@ public interface TrafficEventRepository extends JpaRepository<TrafficEvent, Long
     List<TrafficEvent> findByActivoTrue();
 
     @Query("SELECT te FROM TrafficEvent te WHERE te.activo = true AND te.fechaHora >= :desde ORDER BY te.fechaHora DESC")
-    List<TrafficEvent> findActiveEventsSince(@Param("desde") LocalDateTime desde);
+    List<TrafficEvent> findActiveEventsSince(@Param("desde") Instant desde);
 
     @Query("SELECT te FROM TrafficEvent te WHERE te.activo = true AND te.fechaHora BETWEEN :desde AND :hasta")
-    List<TrafficEvent> findActiveEventsInRange(@Param("desde") LocalDateTime desde, @Param("hasta") LocalDateTime hasta);
+    List<TrafficEvent> findActiveEventsInRange(@Param("desde") Instant desde, @Param("hasta") Instant hasta);
 }

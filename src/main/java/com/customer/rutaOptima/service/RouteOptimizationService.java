@@ -18,7 +18,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -164,7 +165,7 @@ public class RouteOptimizationService {
     /**
      * Obtiene los pedidos pendientes para optimización.
      */
-    private List<Order> getOrdersForOptimization(LocalDate fecha) {
+    private List<Order> getOrdersForOptimization(Instant fecha) {
         return orderRepository.findPendingOrdersWithCustomerByFecha(fecha);
     }
 
@@ -342,8 +343,8 @@ public class RouteOptimizationService {
         stop.setVehicle(vehicle);
         stop.setSecuencia(calculateSequence(visit));
         stop.setEta(visit.getArrivalTime());
-        stop.setEtd(visit.getArrivalTime() != null ? 
-                visit.getArrivalTime().plusMinutes(visit.getLocation().getTiempoServicioMin()) : null);
+        stop.setEtd(visit.getArrivalTime() != null ?
+                visit.getArrivalTime().plus(Duration.ofMinutes(visit.getLocation().getTiempoServicioMin())) : null);
         stop.setCargaAcumuladaCantidad(BigDecimal.valueOf(visit.getAccumulatedCantidad() != null ? visit.getAccumulatedCantidad() : 0.0));
         stop.setCargaAcumuladaVolumen(BigDecimal.valueOf(visit.getAccumulatedVolumen() != null ? visit.getAccumulatedVolumen() : 0.0));
         stop.setCargaAcumuladaPeso(BigDecimal.valueOf(visit.getAccumulatedPeso() != null ? visit.getAccumulatedPeso() : 0.0));
@@ -484,7 +485,7 @@ public class RouteOptimizationService {
         dto.setSequence(calculateSequence(visit));
         dto.setEta(String.valueOf(visit.getArrivalTime()));
         dto.setEtd(visit.getArrivalTime() != null ?
-                String.valueOf(visit.getArrivalTime().plusMinutes(visit.getLocation().getTiempoServicioMin())) : null);
+                String.valueOf(visit.getArrivalTime().plus(Duration.ofMinutes(visit.getLocation().getTiempoServicioMin()))) : null);
         dto.setLatitude(visit.getLocation().getLatitud());
         dto.setLongitude(visit.getLocation().getLongitud());
         return dto;

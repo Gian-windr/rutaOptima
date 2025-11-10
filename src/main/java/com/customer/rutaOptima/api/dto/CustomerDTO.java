@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalTime;
 
 /**
@@ -37,8 +38,8 @@ public class CustomerDTO {
     private BigDecimal longitud;
 
     private Boolean esNuevo = true;
-    private LocalTime ventanaHorariaInicio;
-    private LocalTime ventanaHorariaFin;
+    private Instant ventanaHorariaInicio;
+    private Instant ventanaHorariaFin;
     private BigDecimal demandaPromedioSemanal;
     private BigDecimal factorEstacionalidad;
     private String telefono;

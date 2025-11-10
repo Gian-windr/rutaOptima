@@ -9,7 +9,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,7 +24,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException ex) {
         log.error("Recurso no encontrado: {}", ex.getMessage());
         ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
+                .timestamp(Instant.now())
                 .status(HttpStatus.NOT_FOUND.value())
                 .error("Not Found")
                 .message(ex.getMessage())
@@ -36,7 +36,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBusinessException(BusinessException ex) {
         log.error("Error de negocio: {}", ex.getMessage());
         ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
+                .timestamp(Instant.now())
                 .status(HttpStatus.UNPROCESSABLE_ENTITY.value())
                 .error("Business Rule Violation")
                 .message(ex.getMessage())
@@ -55,7 +55,7 @@ public class GlobalExceptionHandler {
 
         log.error("Errores de validación: {}", errors);
         ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
+                .timestamp(Instant.now())
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error("Validation Error")
                 .message("Error de validación en los datos enviados")
@@ -68,7 +68,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
         log.error("Credenciales inválidas");
         ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
+                .timestamp(Instant.now())
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error("Unauthorized")
                 .message("Email o contraseña incorrectos")
@@ -80,7 +80,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleGenericException(Exception ex) {
         log.error("Error inesperado: ", ex);
         ErrorResponse error = ErrorResponse.builder()
-                .timestamp(LocalDateTime.now())
+                .timestamp(Instant.now())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error("Internal Server Error")
                 .message("Ha ocurrido un error inesperado. Por favor contacte al administrador.")
@@ -93,7 +93,7 @@ public class GlobalExceptionHandler {
     @lombok.NoArgsConstructor
     @lombok.AllArgsConstructor
     public static class ErrorResponse {
-        private LocalDateTime timestamp;
+        private Instant timestamp;
         private int status;
         private String error;
         private String message;
