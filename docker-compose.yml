@@ -1,0 +1,57 @@
+services:
+  # Base de Datos PostgreSQL
+  base-datos:
+    image: postgres:15-alpine
+    container_name: ruta-optima-basedatos
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: rutaoptima
+      POSTGRES_USER: admin_rutas
+      POSTGRES_PASSWORD: rutas2025
+    ports:
+      - "5432:5432"
+    volumes:
+      - datos_postgres:/var/lib/postgresql/data
+    networks:
+      - red-aplicacion
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin_rutas"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Aplicación de Optimización de Rutas
+  aplicacion-rutas:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ruta-optima-app
+    restart: unless-stopped
+    depends_on:
+      base-datos:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DATABASE_URL: jdbc:postgresql://base-datos:5432/rutaoptima
+      DB_USERNAME: admin_rutas
+      DB_PASSWORD: rutas2025
+      JWT_SECRET: rutaOptima2025SecretKeyChangeInProduction1234567890
+    ports:
+      - "8080:8080"
+    networks:
+      - red-aplicacion
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  red-aplicacion:
+    name: red-ruta-optima
+    driver: bridge
+
+volumes:
+  datos_postgres:
+    name: ruta-optima-datos

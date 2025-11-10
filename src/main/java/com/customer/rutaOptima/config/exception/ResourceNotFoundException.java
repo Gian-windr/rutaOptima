@@ -1,0 +1,15 @@
+package com.customer.rutaOptima.config.exception;
+
+/**
+ * Excepción cuando no se encuentra un recurso (HTTP 404)
+ */
+public class ResourceNotFoundException extends RuntimeException {
+
+    public ResourceNotFoundException(String message) {
+        super(message);
+    }
+
+    public ResourceNotFoundException(String resource, Long id) {
+        super(String.format("%s con ID %d no encontrado", resource, id));
+    }
+}

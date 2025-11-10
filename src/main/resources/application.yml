@@ -1,0 +1,115 @@
+spring:
+  application:
+    name: rutaOptima
+  
+  profiles:
+    active: dev
+
+  jpa:
+    open-in-view: false
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+# Configuración de OptaPlanner
+optaplanner:
+  solver:
+    termination:
+      spent-limit: 20s
+    environment-mode: REPRODUCIBLE
+  solver-manager:
+    parallel-solver-count: 4
+
+# Configuración JWT
+app:
+  jwt:
+    secret: ${JWT_SECRET:rutaOptima2025SecretKeyChangeInProduction1234567890}
+    expiration-ms: 86400000 # 24 horas
+
+# Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+---
+# Perfil de desarrollo
+spring:
+  config:
+    activate:
+      on-profile: dev
+  
+  datasource:
+    url: jdbc:postgresql://localhost:5432/rutaoptima_dev
+    username: postgres
+    password: postgres
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 20000
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+
+  flyway:
+    clean-disabled: false
+
+logging:
+  level:
+    com.customer.rutaOptima: DEBUG
+    org.springframework.security: DEBUG
+    org.optaplanner: INFO
+
+---
+# Perfil de producción
+spring:
+  config:
+    activate:
+      on-profile: prod
+  
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://base-datos:5432/rutaoptima}
+    username: ${DB_USERNAME:admin_rutas}
+    password: ${DB_PASSWORD:rutas2025}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 10
+      connection-timeout: 30000
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  flyway:
+    clean-disabled: true
+
+logging:
+  level:
+    com.customer.rutaOptima: INFO
+    org.springframework.security: WARN
+    org.optaplanner: WARN
+
+server:
+  port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
