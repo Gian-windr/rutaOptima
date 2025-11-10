@@ -2,10 +2,12 @@
 -- RutaOptima - Datos de Ejemplo (Seeds)
 -- ==============================================
 
--- Usuario administrador (password: admin123)
+-- Usuarios de prueba
+-- password para ambos: "password" (sin comillas)
+-- Hash generado con: new BCryptPasswordEncoder().encode("password")
 INSERT INTO users (email, password_hash, rol, activo) VALUES
-('admin@rutaoptima.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'ADMIN', true),
-('despachador@rutaoptima.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'USER', true);
+('admin@rutaoptima.com', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'ADMIN', true),
+('despachador@rutaoptima.com', '$2a$10$dXJ3SW6G7P50lGmMkkmwe.20cQQubK3.HZWzG3YB1tlRy.fqvM/BG', 'USER', true);
 
 -- Vehículos de la flota
 -- Depot central: Lima Centro (-12.046374, -77.042793)
