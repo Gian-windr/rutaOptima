@@ -5,8 +5,7 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,10 +57,10 @@ public class Customer {
     private Boolean esNuevo = true;
 
     @Column(name = "ventana_horaria_inicio")
-    private LocalTime ventanaHorariaInicio;
+    private Instant ventanaHorariaInicio;
 
     @Column(name = "ventana_horaria_fin")
-    private LocalTime ventanaHorariaFin;
+    private Instant ventanaHorariaFin;
 
     /**
      * Demanda promedio semanal (para previsión de temporadas)
@@ -89,10 +88,10 @@ public class Customer {
     private Boolean activo = true;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
@@ -100,13 +99,13 @@ public class Customer {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createdAt = Instant.now();
+        updatedAt = Instant.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = Instant.now();
     }
 
     /**

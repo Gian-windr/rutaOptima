@@ -7,7 +7,10 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 
 /**
  * DTO para vehículos
@@ -59,6 +62,13 @@ public class VehicleDTO {
     @DecimalMax(value = "180.0")
     private BigDecimal depotLongitud;
 
-    private LocalTime jornadaInicio = LocalTime.of(8, 0);
-    private LocalTime jornadaFin = LocalTime.of(18, 0);
+    private Instant jornadaInicio = LocalDate.now(ZoneId.systemDefault())
+            .atTime(LocalTime.of(8, 0))
+            .atZone(ZoneId.systemDefault())
+            .toInstant();
+
+    private Instant jornadaFin = LocalDate.now(ZoneId.systemDefault())
+            .atTime(LocalTime.of(18, 0))
+            .atZone(ZoneId.systemDefault())
+            .toInstant();
 }

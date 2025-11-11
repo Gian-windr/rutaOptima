@@ -7,7 +7,8 @@ import org.optaplanner.core.api.score.stream.ConstraintFactory;
 import org.optaplanner.core.api.score.stream.ConstraintProvider;
 import org.optaplanner.core.api.score.stream.Joiners;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 
 /**
  * Define las restricciones del problema de optimización de rutas.
@@ -115,17 +116,17 @@ public class VehicleRoutingConstraintProvider implements ConstraintProvider {
                 .filter(visit -> visit.getVehicle() != null)
                 .filter(visit -> visit.getArrivalTime() != null)
                 .filter(visit -> {
-                    LocalDateTime departureTime = visit.getArrivalTime()
-                            .plusMinutes(visit.getLocation().getTiempoServicioMin());
-                    return departureTime.toLocalTime().isAfter(visit.getVehicle().getJornadaFin());
+                    Instant departureTime = visit.getArrivalTime()
+                            .plus(Duration.ofMinutes(visit.getLocation().getTiempoServicioMin()));
+                    return departureTime.isAfter(visit.getVehicle().getJornadaFin());
                 })
                 .penalize(HardSoftScore.ONE_HARD,
                         visit -> {
-                            LocalDateTime departureTime = visit.getArrivalTime()
-                                    .plusMinutes(visit.getLocation().getTiempoServicioMin());
+                            Instant departureTime = visit.getArrivalTime()
+                                    .plus(Duration.ofMinutes(visit.getLocation().getTiempoServicioMin()));
                             return (int) java.time.Duration.between(
                                     visit.getVehicle().getJornadaFin(),
-                                    departureTime.toLocalTime()
+                                    departureTime
                             ).toMinutes();
                         })
                 .asConstraint("Excede jornada laboral del vehículo");

@@ -5,8 +5,8 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.Duration;
+import java.time.Instant;
 
 /**
  * Entidad que representa una parada individual en una ruta
@@ -55,13 +55,13 @@ public class RouteStop {
      * Estimated Time of Arrival - hora estimada de llegada
      */
     @Column
-    private LocalDateTime eta;
+    private Instant eta;
 
     /**
      * Estimated Time of Departure - hora estimada de salida
      */
     @Column
-    private LocalDateTime etd;
+    private Instant etd;
 
     @Column(name = "distancia_km_desde_anterior", precision = 10, scale = 2)
     private BigDecimal distanciaKmDesdeAnterior;
@@ -83,11 +83,11 @@ public class RouteStop {
     private Integer tiempoEsperaMin = 0;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        createdAt = Instant.now();
     }
 
     /**
@@ -98,15 +98,14 @@ public class RouteStop {
             return false;
         }
 
-        var ventanaInicio = order.getVentanaHorariaInicioEfectiva();
-        var ventanaFin = order.getVentanaHorariaFinEfectiva();
+        Instant ventanaInicio = order.getVentanaHorariaInicioEfectiva();
+        Instant ventanaFin = order.getVentanaHorariaFinEfectiva();
 
         if (ventanaInicio == null || ventanaFin == null) {
             return false;
         }
 
-        var horaLlegada = eta.toLocalTime();
-        return horaLlegada.isBefore(LocalTime.from(ventanaInicio)) || horaLlegada.isAfter(LocalTime.from(ventanaFin));
+        return eta.isBefore(ventanaInicio) || eta.isAfter(ventanaFin);
     }
 
     /**
@@ -117,19 +116,17 @@ public class RouteStop {
             return 0;
         }
 
-        var ventanaInicio = order.getVentanaHorariaInicioEfectiva();
-        var ventanaFin = order.getVentanaHorariaFinEfectiva();
+        Instant ventanaInicio = order.getVentanaHorariaInicioEfectiva();
+        Instant ventanaFin = order.getVentanaHorariaFinEfectiva();
 
         if (ventanaInicio == null || ventanaFin == null) {
             return 0;
         }
 
-        var horaLlegada = eta.toLocalTime();
-
-        if (horaLlegada.isBefore(LocalTime.from(ventanaInicio))) {
-            return (int) java.time.Duration.between(horaLlegada, ventanaInicio).toMinutes();
-        } else if (horaLlegada.isAfter(LocalTime.from(ventanaFin))) {
-            return (int) java.time.Duration.between(ventanaFin, horaLlegada).toMinutes();
+        if (eta.isBefore(ventanaInicio)) {
+            return (int) Duration.between(eta, ventanaInicio).toMinutes();
+        } else if (eta.isAfter(ventanaFin)) {
+            return (int) Duration.between(ventanaFin, eta).toMinutes();
         }
 
         return 0;

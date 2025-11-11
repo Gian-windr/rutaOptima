@@ -5,8 +5,10 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 
 /**
  * Entidad que representa un vehículo de la flota
@@ -82,27 +84,33 @@ public class Vehicle {
 
     @Column(name = "jornada_inicio")
     @Builder.Default
-    private LocalTime jornadaInicio = LocalTime.of(8, 0);
+    private Instant jornadaInicio = LocalDate.now(ZoneId.systemDefault())
+            .atTime(LocalTime.of(8, 0))
+            .atZone(ZoneId.systemDefault())
+            .toInstant();
 
     @Column(name = "jornada_fin")
     @Builder.Default
-    private LocalTime jornadaFin = LocalTime.of(18, 0);
-
+    private Instant jornadaFin = LocalDate.now(ZoneId.systemDefault())
+            .atTime(LocalTime.of(18, 0))
+            .atZone(ZoneId.systemDefault())
+            .toInstant();
+    
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
-        updatedAt = LocalDateTime.now();
+        createdAt = Instant.now();
+        updatedAt = Instant.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = LocalDateTime.now();
+        updatedAt = Instant.now();
     }
 
     /**

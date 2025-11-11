@@ -14,6 +14,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -184,7 +185,7 @@ public class RoutePlanController {
     @lombok.Data
     public static class RoutePlanDTO {
         private Long id;
-        private LocalDate fecha;
+        private Instant fecha;
         private String objetivo;
         private RoutePlan.Estado estado;
         private String score;
@@ -194,8 +195,8 @@ public class RoutePlanController {
         private Integer vehiculosUtilizados;
         private Integer pedidosAsignados;
         private Integer maxOptimizationTimeSeconds;
-        private java.time.LocalDateTime createdAt;
-        private java.time.LocalDateTime updatedAt;
+        private Instant createdAt;
+        private Instant updatedAt;
         private List<RouteStopDTO> stops;
     }
 
@@ -210,8 +211,8 @@ public class RoutePlanController {
         private Double latitud;
         private Double longitud;
         private Integer secuencia;
-        private java.time.LocalDateTime eta;
-        private java.time.LocalDateTime etd;
+        private Instant eta;
+        private Instant etd;
         private Double cargaAcumuladaCantidad;
         private Double cargaAcumuladaVolumen;
         private Double cargaAcumuladaPeso;

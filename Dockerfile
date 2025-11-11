@@ -4,6 +4,8 @@ WORKDIR /app
 
 # Copiar archivos de Maven
 COPY pom.xml .
+RUN mvn dependency:go-offline
+
 COPY src ./src
 
 # Compilar la aplicación

@@ -9,9 +9,8 @@ import org.optaplanner.core.api.domain.entity.PlanningEntity;
 import org.optaplanner.core.api.domain.lookup.PlanningId;
 import org.optaplanner.core.api.domain.variable.PlanningVariable;
 
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.math.BigDecimal;
+import java.time.Duration;
+import java.time.Instant;
 
 @PlanningEntity
 @Data
@@ -34,7 +33,7 @@ public class Visit {
     private Double accumulatedVolumen = 0.0;
     private Double accumulatedPeso = 0.0;
 
-    private LocalDateTime arrivalTime;  // Arrival time at the location
+    private Instant arrivalTime;  // Arrival time at the location
 
     private int servicioMinutos = 10;  // Default service time in minutes (delivery)
 
@@ -107,18 +106,18 @@ public class Visit {
     }
 
     // Get departure time (after service)
-    public LocalDateTime getDepartureTime() {
+    public Instant getDepartureTime() {
         if (arrivalTime == null) {
             return null;
         }
 
-        LocalDateTime effectiveArrival = arrivalTime;
+        Instant effectiveArrival = arrivalTime;
 
         // If we arrive before the time window, wait
         if (location.tieneVentanaHoraria() && arrivalTime.isBefore(location.getVentanaInicio())) {
             effectiveArrival = location.getVentanaInicio();
         }
 
-        return effectiveArrival.plusMinutes(servicioMinutos);
+        return effectiveArrival.plus(Duration.ofMinutes(servicioMinutos));
     }
 }
