@@ -24,10 +24,6 @@ public class OptimizeRouteResponse {
     private String score;
     private Integer tiempoOptimizacionSeg;
 
-    public void setVehicleRoutes(List<VehicleRouteDTO> vehicleRoutes) {
-        this.vehicleRoutes = vehicleRoutes;
-    }
-
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

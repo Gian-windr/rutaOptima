@@ -8,6 +8,7 @@ import com.customer.rutaOptima.config.exception.ResourceNotFoundException;
 import com.customer.rutaOptima.persistence.RoutePlanRepository;
 import com.customer.rutaOptima.service.RouteOptimizationService;
 import jakarta.validation.Valid;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,12 +38,16 @@ public class RoutePlanController {
     @PostMapping("/optimize")
     public ResponseEntity<OptimizeRouteResponse> optimizeRoutes(
             @Valid @RequestBody OptimizeRouteRequest request) {
-        
-        log.info("POST /api/route-plans/optimize - Fecha: {}, Objetivo: {}", 
+
+        log.info("POST /api/route-plans/optimize - Fecha: {}, Objetivo: {}",
                 request.getFecha(), request.getObjective());
-        
-        OptimizeRouteResponse response = optimizationService.optimizeRoutes(request);
-        
+
+        ZoneId zone = ZoneId.systemDefault();
+        Instant startOfDay = request.getFecha().atStartOfDay(zone).toInstant();
+        Instant startNextDay = request.getFecha().plusDays(1).atStartOfDay(zone).toInstant();
+
+        OptimizeRouteResponse response = optimizationService.optimizeRoutes(request, startOfDay, startNextDay);
+
         return ResponseEntity.ok(response);
     }
 
@@ -85,25 +91,31 @@ public class RoutePlanController {
     public ResponseEntity<List<RoutePlanDTO>> listRoutePlans(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             @RequestParam(required = false) RoutePlan.Estado estado) {
-        
+
         log.info("GET /api/route-plans - Fecha: {}, Estado: {}", fecha, estado);
-        
+
         List<RoutePlan> plans;
-        
-        if (fecha != null && estado != null) {
-            plans = routePlanRepository.findByFechaAndEstado(fecha, estado);
-        } else if (fecha != null) {
-            plans = routePlanRepository.findByFecha(fecha);
+
+        if (fecha != null) {
+            ZoneId zone = ZoneId.systemDefault();
+            Instant startOfDay = fecha.atStartOfDay(zone).toInstant();
+            Instant startNextDay = fecha.plusDays(1).atStartOfDay(zone).toInstant();
+
+            if (estado != null) {
+                plans = routePlanRepository.findByFechaBetweenAndEstado(startOfDay, startNextDay, estado);
+            } else {
+                plans = routePlanRepository.findByFechaBetween(startOfDay, startNextDay);
+            }
         } else if (estado != null) {
             plans = routePlanRepository.findByEstado(estado);
         } else {
             plans = routePlanRepository.findAll();
         }
-        
+
         List<RoutePlanDTO> dtos = plans.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
-        
+
         return ResponseEntity.ok(dtos);
     }
 
@@ -182,7 +194,7 @@ public class RoutePlanController {
 
     // DTOs internos del controlador
 
-    @lombok.Data
+    @Data
     public static class RoutePlanDTO {
         private Long id;
         private Instant fecha;
@@ -200,7 +212,7 @@ public class RoutePlanController {
         private List<RouteStopDTO> stops;
     }
 
-    @lombok.Data
+    @Data
     public static class RouteStopDTO {
         private Long id;
         private Long orderId;

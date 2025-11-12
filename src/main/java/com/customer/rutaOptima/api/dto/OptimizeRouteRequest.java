@@ -1,5 +1,6 @@
 package com.customer.rutaOptima.api.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -20,7 +22,8 @@ public class OptimizeRouteRequest {
 
     @NotNull(message = "La fecha es obligatoria")
     @FutureOrPresent(message = "La fecha debe ser presente o futura")
-    private Instant fecha;
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
+    private LocalDate fecha;
 
     @NotEmpty(message = "Debe especificar al menos un vehículo")
     private List<Long> vehicleIds;
@@ -30,9 +33,11 @@ public class OptimizeRouteRequest {
             message = "El objetivo debe ser MINIMIZE_DISTANCE, MINIMIZE_TIME o MINIMIZE_COST")
     private String objective;
 
-    private Boolean allowSoftTimeWindowViolations = false;
+    @Builder.Default
+    private Boolean allowSoftTimeWindowViolations = (Boolean) false;
 
     @Min(value = 5, message = "El tiempo mínimo de optimización es 5 segundos")
     @Max(value = 300, message = "El tiempo máximo de optimización es 300 segundos")
-    private Integer maxOptimizationTimeSeconds = 20;
+    @Builder.Default
+    private Integer maxOptimizationTimeSeconds = (Integer) 20;
 }

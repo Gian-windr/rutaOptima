@@ -35,9 +35,11 @@ public class User {
 
     @NotBlank(message = "El rol es obligatorio")
     @Column(nullable = false, length = 50)
+    @Builder.Default
     private String rol = "USER";
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean activo = true;
 
     @Column(name = "created_at", nullable = false, updatable = false)

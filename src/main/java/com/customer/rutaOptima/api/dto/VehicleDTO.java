@@ -44,13 +44,16 @@ public class VehicleDTO {
 
     @NotNull
     @DecimalMin(value = "0.1")
+    @Builder.Default
     private BigDecimal velocidadKmh = new BigDecimal("40.0");
 
     @NotNull
     @DecimalMin(value = "0.0")
+    @Builder.Default
     private BigDecimal costoKm = new BigDecimal("1.5");
 
-    private Boolean activo = true;
+    @Builder.Default
+    private Boolean activo = (Boolean) true;
 
     @NotNull(message = "La latitud del depósito es obligatoria")
     @DecimalMin(value = "-90.0")
@@ -62,11 +65,13 @@ public class VehicleDTO {
     @DecimalMax(value = "180.0")
     private BigDecimal depotLongitud;
 
+    @Builder.Default
     private Instant jornadaInicio = LocalDate.now(ZoneId.systemDefault())
             .atTime(LocalTime.of(8, 0))
             .atZone(ZoneId.systemDefault())
             .toInstant();
 
+    @Builder.Default
     private Instant jornadaFin = LocalDate.now(ZoneId.systemDefault())
             .atTime(LocalTime.of(18, 0))
             .atZone(ZoneId.systemDefault())

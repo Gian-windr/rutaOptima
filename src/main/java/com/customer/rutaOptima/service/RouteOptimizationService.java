@@ -39,11 +39,12 @@ public class RouteOptimizationService {
      * Optimiza las rutas para una fecha específica usando OptaPlanner.
      */
     @Transactional
-    public OptimizeRouteResponse optimizeRoutes(OptimizeRouteRequest request) {
-        log.info("Iniciando optimización para fecha: {}", request.getFecha());
+    public OptimizeRouteResponse optimizeRoutes(OptimizeRouteRequest request, Instant startInclusive, Instant endExclusive) {
+        log.info("Iniciando optimización para fecha: {} ({} - {})",
+                request.getFecha(), startInclusive, endExclusive);
 
-        // 1. Validar y obtener datos
-        List<Order> orders = getOrdersForOptimization(request.getFecha());
+        // 1. Validar y obtener datos (pedidos entre instants)
+        List<Order> orders = getOrdersForOptimization(startInclusive, endExclusive);
         List<Vehicle> vehicles = getVehiclesForOptimization(request.getVehicleIds());
 
         if (orders.isEmpty()) {
@@ -54,13 +55,13 @@ public class RouteOptimizationService {
             throw new BusinessException("No hay vehículos disponibles para la optimización");
         }
 
-        // 2. Crear el plan de rutas
-        RoutePlan routePlan = createRoutePlan(request);
+        // 2. Crear el plan de rutas usando el instante de inicio del día
+        RoutePlan routePlan = createRoutePlan(request, startInclusive);
 
         // 3. Construir el problema de optimización
         VehicleRoutingSolution problem = buildOptimizationProblem(orders, vehicles, routePlan.getId());
 
-        log.info("Problema construido: {} visitas, {} vehículos", 
+        log.info("Problema construido: {} visitas, {} vehículos",
                 problem.getVisits().size(), problem.getVehicles().size());
 
         // 4. Resolver con OptaPlanner
@@ -165,8 +166,8 @@ public class RouteOptimizationService {
     /**
      * Obtiene los pedidos pendientes para optimización.
      */
-    private List<Order> getOrdersForOptimization(Instant fecha) {
-        return orderRepository.findPendingOrdersWithCustomerByFecha(fecha);
+    private List<Order> getOrdersForOptimization(Instant startInclusive, Instant endExclusive) {
+        return orderRepository.findPendingOrdersWithCustomerBetween(startInclusive, endExclusive);
     }
 
     /**
@@ -176,34 +177,32 @@ public class RouteOptimizationService {
         if (vehicleIds == null || vehicleIds.isEmpty()) {
             return vehicleRepository.findByActivoTrue();
         }
-        
+
         List<Vehicle> vehicles = vehicleRepository.findAllById(vehicleIds);
-        
+
         // Validar que todos los vehículos existen y están activos
         if (vehicles.size() != vehicleIds.size()) {
             throw new BusinessException("Algunos vehículos no fueron encontrados");
         }
-        
+
         List<Vehicle> inactiveVehicles = vehicles.stream()
                 .filter(v -> !v.getActivo())
                 .collect(Collectors.toList());
-        
+
         if (!inactiveVehicles.isEmpty()) {
-            throw new BusinessException("Algunos vehículos están inactivos: " + 
-                    inactiveVehicles.stream()
-                            .map(Vehicle::getPatente)
-                            .collect(Collectors.joining(", ")));
+            throw new BusinessException("Algunos vehículos están inactivos: " +
+                    inactiveVehicles.stream().map(Vehicle::getId).map(String::valueOf).collect(Collectors.joining(", ")));
         }
-        
+
         return vehicles;
     }
 
     /**
      * Crea una entidad RoutePlan inicial.
      */
-    private RoutePlan createRoutePlan(OptimizeRouteRequest request) {
+    private RoutePlan createRoutePlan(OptimizeRouteRequest request, Instant startInclusive) {
         RoutePlan plan = new RoutePlan();
-        plan.setFecha(request.getFecha());
+        plan.setFecha(startInclusive);
         plan.setObjetivo(request.getObjective());
         plan.setMaxOptimizationTimeSeconds(request.getMaxOptimizationTimeSeconds());
         plan.setEstado(RoutePlan.Estado.CREATED);

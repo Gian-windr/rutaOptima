@@ -79,8 +79,8 @@ public class OrderService {
         if (diasAnticipacion < DIAS_ANTICIPACION_CLIENTE_NUEVO) {
             throw new BusinessException(String.format(
                     "Para clientes nuevos, los pedidos deben realizarse con mínimo %d días de anticipación. " +
-                    "Fecha actual: %s, Fecha entrega: %s (solo %d días de anticipación). " +
-                    "Cliente: %s",
+                            "Fecha actual: %s, Fecha entrega: %s (solo %d días de anticipación). " +
+                            "Cliente: %s",
                     DIAS_ANTICIPACION_CLIENTE_NUEVO,
                     fechaActual,
                     fechaEntrega,
@@ -93,6 +93,11 @@ public class OrderService {
     @Transactional(readOnly = true)
     public List<Order> findByFecha(Instant fecha) {
         return orderRepository.findByFechaEntrega(fecha);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Order> findByFechaRange(Instant start, Instant end) {
+        return orderRepository.findByFechaEntregaBetween(start, end);
     }
 
     @Transactional(readOnly = true)

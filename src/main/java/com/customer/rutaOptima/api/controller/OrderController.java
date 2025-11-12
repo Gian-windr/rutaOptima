@@ -12,8 +12,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
-import java.time.LocalDate;
+import java.time.*;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -31,24 +32,52 @@ public class OrderController {
 
     @GetMapping
     public ResponseEntity<List<OrderDTO>> getOrders(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Instant fecha,
+            @RequestParam String fecha,
             @RequestParam(required = false) String estado) {
-        
-        List<Order> orders;
-        if (fecha != null) {
-            orders = (estado != null) 
-                    ? orderService.findByFecha(fecha).stream()
-                        .filter(o -> o.getEstado().equals(estado))
-                        .collect(Collectors.toList())
-                    : orderService.findByFecha(fecha);
-        } else {
-            orders = List.of(); // O implementar un findAll() si es necesario
+
+        if (fecha == null || fecha.isBlank()) {
+            return ResponseEntity.ok(List.of());
         }
-        
+
+        ZoneId zone = ZoneId.systemDefault();
+
+        Instant startInstant;
+        Instant endInstant;
+
+        if (fecha.matches("^\\d{4}-\\d{2}-\\d{2}$")) {
+            LocalDate ld = LocalDate.parse(fecha);
+            startInstant = ld.atStartOfDay(zone).toInstant();
+            endInstant = ld.plusDays(1).atStartOfDay(zone).toInstant();
+        } else {
+            Instant parsedInstant;
+            try {
+                parsedInstant = Instant.parse(fecha); // e.g. 2025-11-12T10:15:30Z
+            } catch (DateTimeParseException ex1) {
+                try {
+                    parsedInstant = OffsetDateTime.parse(fecha).toInstant(); // con offset
+                } catch (DateTimeParseException ex2) {
+                    // sin offset -> LocalDateTime
+                    LocalDateTime ldt = LocalDateTime.parse(fecha);
+                    parsedInstant = ldt.atZone(zone).toInstant();
+                }
+            }
+            // Para "con hora" tomar la hora (rango de 1 hora)
+            startInstant = parsedInstant.truncatedTo(ChronoUnit.HOURS);
+            endInstant = startInstant.plus(1, ChronoUnit.HOURS);
+        }
+
+        List<Order> orders = orderService.findByFechaRange(startInstant, endInstant);
+
+        if (estado != null && !estado.isBlank()) {
+            orders = orders.stream()
+                    .filter(o -> estado.equalsIgnoreCase(o.getEstado()))
+                    .collect(Collectors.toList());
+        }
+
         List<OrderDTO> dtos = orders.stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
-        
+
         return ResponseEntity.ok(dtos);
     }
 
@@ -92,7 +121,7 @@ public class OrderController {
 
     private Order toEntity(OrderDTO dto) {
         Customer customer = customerService.findById(dto.getCustomerId());
-        
+
         return Order.builder()
                 .customer(customer)
                 .fechaEntrega(dto.getFechaEntrega())
@@ -102,7 +131,7 @@ public class OrderController {
                 .estado(dto.getEstado() != null ? dto.getEstado() : "PENDIENTE")
                 .ventanaHorariaInicio(dto.getVentanaHorariaInicio())
                 .ventanaHorariaFin(dto.getVentanaHorariaFin())
-                .prioridad(dto.getPrioridad() != null ? dto.getPrioridad() : 1)
+                .prioridad(Integer.valueOf(dto.getPrioridad() != null ? dto.getPrioridad() : 1))
                 .notas(dto.getNotas())
                 .build();
     }

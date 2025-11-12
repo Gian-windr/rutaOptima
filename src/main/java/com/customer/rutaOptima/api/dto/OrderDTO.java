@@ -8,8 +8,6 @@ import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.LocalTime;
 
 /**
  * DTO para crear/actualizar pedidos
@@ -39,13 +37,19 @@ public class OrderDTO {
     @DecimalMin(value = "0.0")
     private BigDecimal peso;
 
+    @Builder.Default
     private String estado = "PENDIENTE";
+
     private Instant ventanaHorariaInicio;
+
     private Instant ventanaHorariaFin;
-    private Integer prioridad = 1;
+
+    @Builder.Default
+    private Integer prioridad = (Integer) 1;
     
     @Min(value = 0, message = "El tiempo de servicio no puede ser negativo")
-    private Integer tiempoServicioEstimadoMin = 10;
+    @Builder.Default
+    private Integer tiempoServicioEstimadoMin = (Integer) 10;
     
     private String notas;
 }
