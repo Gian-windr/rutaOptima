@@ -30,6 +30,11 @@ public class OrderService {
     private static final int DIAS_ANTICIPACION_CLIENTE_NUEVO = 5;
 
     @Transactional
+    public List<Order> findAll() {
+        return orderRepository.findAll();
+    }
+
+    @Transactional
     public Order createOrder(Order order) {
         log.info("Creando pedido para cliente ID: {}, fecha entrega: {}",
                 order.getCustomer().getId(), order.getFechaEntrega());

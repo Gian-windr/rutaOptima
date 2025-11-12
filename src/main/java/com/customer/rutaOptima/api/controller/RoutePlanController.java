@@ -42,11 +42,16 @@ public class RoutePlanController {
         log.info("POST /api/route-plans/optimize - Fecha: {}, Objetivo: {}",
                 request.getFecha(), request.getObjective());
 
-        ZoneId zone = ZoneId.systemDefault();
-        Instant startOfDay = request.getFecha().atStartOfDay(zone).toInstant();
-        Instant startNextDay = request.getFecha().plusDays(1).atStartOfDay(zone).toInstant();
+        // Parsear la fecha String a LocalDate
+        LocalDate fecha = LocalDate.parse(request.getFecha());
 
-        OptimizeRouteResponse response = optimizationService.optimizeRoutes(request, startOfDay, startNextDay);
+        // Convertir a rango de Instant para el día completo
+        ZoneId zone = ZoneId.systemDefault();
+        Instant startOfDay = fecha.atStartOfDay(zone).toInstant();
+        Instant startNextDay = fecha.plusDays(1).atStartOfDay(zone).toInstant();
+
+        OptimizeRouteResponse response = optimizationService.optimizeRoutes(
+                request, startOfDay, startNextDay);
 
         return ResponseEntity.ok(response);
     }
@@ -148,9 +153,9 @@ public class RoutePlanController {
         dto.setObjetivo(plan.getObjetivo());
         dto.setEstado(plan.getEstado());
         dto.setScore(plan.getScore());
-        dto.setTotalKm(plan.getTotalKm());
-        dto.setTotalTimeMin(plan.getTotalTimeMin());
-        dto.setTotalCost(plan.getTotalCost());
+        dto.setTotalKm(plan.getKmsTotales().doubleValue());
+        dto.setTotalTimeMin(plan.getTiempoEstimadoMin());
+        dto.setTotalCost(plan.getCostoTotal().doubleValue());
         dto.setVehiculosUtilizados(plan.getVehiculosUtilizados());
         dto.setPedidosAsignados(plan.getPedidosAsignados());
         dto.setMaxOptimizationTimeSeconds(plan.getMaxOptimizationTimeSeconds());

@@ -79,7 +79,7 @@ public class RoutePlan {
     @Builder.Default
     private Integer pedidosNoAsignados = 0;
 
-    @Column(length = 255)
+    @Column
     private String score;
 
     @Column(name = "tiempo_optimizacion_seg")
@@ -174,22 +174,5 @@ public class RoutePlan {
         this.costoTotal = totalCosto;
         this.vehiculosUtilizados = (int) vehiculosUnicos;
         this.pedidosAsignados = pedidosAsignados;
-    }
-
-    // Métodos helper para compatibilidad con DTOs
-    public Double getTotalKm() {
-        return kmsTotales != null ? kmsTotales.doubleValue() : null;
-    }
-
-    public Integer getTotalTimeMin() {
-        return tiempoEstimadoMin;
-    }
-
-    public Double getTotalCost() {
-        return costoTotal != null ? costoTotal.doubleValue() : null;
-    }
-
-    public Integer getMaxOptimizationTimeSeconds() {
-        return tiempoOptimizacionSeg;
     }
 }

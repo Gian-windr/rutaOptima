@@ -2,6 +2,8 @@ package com.customer.rutaOptima.service;
 
 import com.customer.rutaOptima.api.dto.OptimizeRouteRequest;
 import com.customer.rutaOptima.api.dto.OptimizeRouteResponse;
+import com.customer.rutaOptima.api.dto.OrderDTO;
+import com.customer.rutaOptima.api.dto.VehicleDTO;
 import com.customer.rutaOptima.domain.*;
 import com.customer.rutaOptima.config.exception.BusinessException;
 import com.customer.rutaOptima.config.exception.ResourceNotFoundException;
@@ -56,7 +58,7 @@ public class RouteOptimizationService {
         }
 
         // 2. Crear el plan de rutas usando el instante de inicio del día
-        RoutePlan routePlan = createRoutePlan(request, startInclusive);
+        RoutePlan routePlan = createRoutePlan(request, startInclusive, orders, vehicles);
 
         // 3. Construir el problema de optimización
         VehicleRoutingSolution problem = buildOptimizationProblem(orders, vehicles, routePlan.getId());
@@ -200,10 +202,14 @@ public class RouteOptimizationService {
     /**
      * Crea una entidad RoutePlan inicial.
      */
-    private RoutePlan createRoutePlan(OptimizeRouteRequest request, Instant startInclusive) {
+    private RoutePlan createRoutePlan(OptimizeRouteRequest request, Instant startInclusive, List<Order> orders, List<Vehicle> vehicles) {
         RoutePlan plan = new RoutePlan();
         plan.setFecha(startInclusive);
         plan.setObjetivo(request.getObjective());
+        plan.setKmsTotales(BigDecimal.ZERO);
+        plan.setCostoTotal(BigDecimal.ZERO);
+        plan.setPedidosAsignados(orders.toArray().length);
+        plan.setVehiculosUtilizados(vehicles.toArray().length);
         plan.setMaxOptimizationTimeSeconds(request.getMaxOptimizationTimeSeconds());
         plan.setEstado(RoutePlan.Estado.CREATED);
         return routePlanRepository.save(plan);
@@ -261,7 +267,7 @@ public class RouteOptimizationService {
         Visit visit = new Visit();
         visit.setId(order.getId());
         visit.setRoutePlanId(routePlanId);
-        
+
         Location location = new Location();
         location.setOrderId(order.getId());
         location.setCustomerId(order.getCustomer().getId());
@@ -275,9 +281,9 @@ public class RouteOptimizationService {
         location.setVentanaFin(order.getVentanaHorariaFinEfectiva());
         location.setTiempoServicioMin(order.getTiempoServicioEstimadoMin());
         location.setPrioridad(order.getPrioridad());
-        
+
         visit.setLocation(location);
-        
+
         return visit;
     }
 
@@ -290,12 +296,12 @@ public class RouteOptimizationService {
                 if (event.afectaUbicacion(
                         BigDecimal.valueOf(visit.getLocation().getLatitud()),
                         BigDecimal.valueOf(visit.getLocation().getLongitud()))) {
-                    
+
                     // Aumentar tiempo de servicio por el factor de retraso
                     int tiempoOriginal = visit.getLocation().getTiempoServicioMin();
                     int tiempoAjustado = (int) Math.ceil(tiempoOriginal * event.getFactorRetraso().doubleValue());
                     visit.getLocation().setTiempoServicioMin(tiempoAjustado);
-                    
+
                     log.debug("Evento de tráfico aplicado a visita {}: tiempo {} -> {} min",
                             visit.getId(), tiempoOriginal, tiempoAjustado);
                 }
@@ -315,11 +321,15 @@ public class RouteOptimizationService {
             if (visit.getVehicle() != null) {
                 RouteStop stop = createRouteStop(visit, routePlan);
                 routeStopRepository.save(stop);
+                // Agregar el stop a la lista del routePlan
+                routePlan.getStops().add(stop);
             }
         }
 
-        // Actualizar métricas del plan
+        // IMPORTANTE: Calcular métricas ANTES de actualizar otros campos
         routePlan.calculateMetrics();
+
+        // Actualizar otros campos del plan
         routePlan.setScore(solution.getScore() != null ? solution.getScore().toString() : "N/A");
         routePlan.setEstado(RoutePlan.Estado.OPTIMIZED);
         routePlanRepository.save(routePlan);
@@ -331,13 +341,13 @@ public class RouteOptimizationService {
     private RouteStop createRouteStop(Visit visit, RoutePlan routePlan) {
         RouteStop stop = new RouteStop();
         stop.setRoutePlan(routePlan);
-        
+
         // Buscar el pedido y vehículo reales
         Order order = orderRepository.findById(visit.getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found: " + visit.getId()));
         Vehicle vehicle = vehicleRepository.findById(visit.getVehicle().getId())
                 .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + visit.getVehicle().getId()));
-        
+
         stop.setOrder(order);
         stop.setVehicle(vehicle);
         stop.setSecuencia(calculateSequence(visit));
@@ -347,7 +357,7 @@ public class RouteOptimizationService {
         stop.setCargaAcumuladaCantidad(BigDecimal.valueOf(visit.getAccumulatedCantidad() != null ? visit.getAccumulatedCantidad() : 0.0));
         stop.setCargaAcumuladaVolumen(BigDecimal.valueOf(visit.getAccumulatedVolumen() != null ? visit.getAccumulatedVolumen() : 0.0));
         stop.setCargaAcumuladaPeso(BigDecimal.valueOf(visit.getAccumulatedPeso() != null ? visit.getAccumulatedPeso() : 0.0));
-        
+
         return stop;
     }
 
@@ -357,12 +367,12 @@ public class RouteOptimizationService {
     private Integer calculateSequence(Visit visit) {
         int sequence = 1;
         Visit current = visit;
-        
+
         while (current.getPreviousVisit() != null) {
             sequence++;
             current = current.getPreviousVisit();
         }
-        
+
         return sequence;
     }
 
@@ -374,29 +384,33 @@ public class RouteOptimizationService {
         response.setRoutePlanId(routePlan.getId());
         response.setStatus(routePlan.getEstado().name());
         response.setScore(solution.getScore() != null ? solution.getScore().toString() : "N/A");
-        
+
         // Métricas
-        OptimizeRouteResponse.MetricsDTO metrics = new OptimizeRouteResponse.MetricsDTO();
-        metrics.setTotalKm(BigDecimal.valueOf(routePlan.getTotalKm()));  // Convierte Double a BigDecimal
-        metrics.setTotalTimeMin(routePlan.getTotalTimeMin());
-        metrics.setTotalCost(BigDecimal.valueOf(routePlan.getTotalCost()));  // Convierte Double a BigDecimal
-        metrics.setVehiculosUtilizados(routePlan.getVehiculosUtilizados());
-        metrics.setPedidosAsignados(routePlan.getPedidosAsignados());
-        response.setMetrics(metrics);
-        
-        // Rutas por vehículo
+        buildMetrics(routePlan, response);
+
+        // Lista plana de todas las paradas ordenadas por vehículo y secuencia
+        List<OptimizeRouteResponse.StopDTO> allStops = solution.getVisits().stream()
+                .filter(v -> v.getVehicle() != null)
+                .sorted(Comparator.comparing((Visit v) -> v.getVehicle().getId())
+                        .thenComparing(this::calculateSequence))
+                .map(this::buildStopDTO)
+                .collect(Collectors.toList());
+
+        response.setStops(allStops);
+
+        // Rutas por vehículo (opcional)
         Map<Long, List<Visit>> visitsByVehicle = solution.getVisits().stream()
                 .filter(v -> v.getVehicle() != null)
                 .collect(Collectors.groupingBy(v -> v.getVehicle().getId()));
-        
+
         List<OptimizeRouteResponse.VehicleRouteDTO> vehicleRoutes = new ArrayList<>();
         for (Map.Entry<Long, List<Visit>> entry : visitsByVehicle.entrySet()) {
             OptimizeRouteResponse.VehicleRouteDTO route = buildVehicleRoute(entry.getKey(), entry.getValue());
             vehicleRoutes.add(route);
         }
-        
-            response.setVehicleRoutes(vehicleRoutes);
-        
+
+        response.setVehicleRoutes(vehicleRoutes);
+
         return response;
     }
 
@@ -408,30 +422,43 @@ public class RouteOptimizationService {
         response.setRoutePlanId(routePlan.getId());
         response.setStatus(routePlan.getEstado().name());
         response.setScore(routePlan.getScore());
-        
+
         // Métricas
-        OptimizeRouteResponse.MetricsDTO metrics = new OptimizeRouteResponse.MetricsDTO();
-        metrics.setTotalKm(BigDecimal.valueOf(routePlan.getTotalKm()));  // Convierte Double a BigDecimal
-        metrics.setTotalTimeMin(routePlan.getTotalTimeMin());
-        metrics.setTotalCost(BigDecimal.valueOf(routePlan.getTotalCost()));
-        metrics.setVehiculosUtilizados(routePlan.getVehiculosUtilizados());
-        metrics.setPedidosAsignados(routePlan.getPedidosAsignados());
-        response.setMetrics(metrics);
-        
+        buildMetrics(routePlan, response);
+
+        // Lista plana de todas las paradas
+        List<OptimizeRouteResponse.StopDTO> allStops = routePlan.getStops().stream()
+                .sorted(Comparator.comparing((RouteStop s) -> s.getVehicle().getId())
+                        .thenComparing(RouteStop::getSecuencia))
+                .map(this::buildStopDTOFromRouteStop)
+                .collect(Collectors.toList());
+
+        response.setStops(allStops);
+
         // Agrupar stops por vehículo
         Map<Long, List<RouteStop>> stopsByVehicle = routePlan.getStops().stream()
                 .collect(Collectors.groupingBy(s -> s.getVehicle().getId()));
-        
+
         List<OptimizeRouteResponse.VehicleRouteDTO> vehicleRoutes = new ArrayList<>();
         for (Map.Entry<Long, List<RouteStop>> entry : stopsByVehicle.entrySet()) {
             OptimizeRouteResponse.VehicleRouteDTO route = buildVehicleRouteFromStops(
                     entry.getKey(), entry.getValue());
             vehicleRoutes.add(route);
         }
-        
+
         response.setVehicleRoutes(vehicleRoutes);
-        
+
         return response;
+    }
+
+    private void buildMetrics(RoutePlan routePlan, OptimizeRouteResponse response) {
+        OptimizeRouteResponse.MetricsDTO metrics = new OptimizeRouteResponse.MetricsDTO();
+        metrics.setTotalKm(routePlan.getKmsTotales() != null ? routePlan.getKmsTotales() : BigDecimal.ZERO);
+        metrics.setTotalTimeMin(routePlan.getTiempoEstimadoMin() != null ? routePlan.getTiempoEstimadoMin() : 0);
+        metrics.setTotalCost(routePlan.getCostoTotal() != null ? routePlan.getCostoTotal() : BigDecimal.ZERO);
+        metrics.setVehiculosUtilizados(routePlan.getVehiculosUtilizados() != null ? routePlan.getVehiculosUtilizados() : 0);
+        metrics.setPedidosAsignados(routePlan.getPedidosAsignados() != null ? routePlan.getPedidosAsignados() : 0);
+        response.setMetrics(metrics);
     }
 
     /**
@@ -440,18 +467,18 @@ public class RouteOptimizationService {
     private OptimizeRouteResponse.VehicleRouteDTO buildVehicleRoute(Long vehicleId, List<Visit> visits) {
         OptimizeRouteResponse.VehicleRouteDTO route = new OptimizeRouteResponse.VehicleRouteDTO();
         route.setVehicleId(vehicleId);
-        
+
         // Ordenar visitas por secuencia
         List<Visit> sortedVisits = visits.stream()
                 .sorted(Comparator.comparing(this::calculateSequence))
                 .collect(Collectors.toList());
-        
+
         List<OptimizeRouteResponse.StopDTO> stops = sortedVisits.stream()
                 .map(this::buildStopDTO)
                 .collect(Collectors.toList());
-        
+
         route.setStops(stops);
-        
+
         return route;
     }
 
@@ -460,17 +487,17 @@ public class RouteOptimizationService {
      */
     private OptimizeRouteResponse.VehicleRouteDTO buildVehicleRouteFromStops(
             Long vehicleId, List<RouteStop> stops) {
-        
+
         OptimizeRouteResponse.VehicleRouteDTO route = new OptimizeRouteResponse.VehicleRouteDTO();
         route.setVehicleId(vehicleId);
-        
+
         List<OptimizeRouteResponse.StopDTO> stopDTOs = stops.stream()
                 .sorted(Comparator.comparing(RouteStop::getSecuencia))
                 .map(this::buildStopDTOFromRouteStop)
                 .collect(Collectors.toList());
-        
+
         route.setStops(stopDTOs);
-        
+
         return route;
     }
 
@@ -480,13 +507,26 @@ public class RouteOptimizationService {
     private OptimizeRouteResponse.StopDTO buildStopDTO(Visit visit) {
         OptimizeRouteResponse.StopDTO dto = new OptimizeRouteResponse.StopDTO();
         dto.setOrderId(visit.getId());
+        dto.setCustomerId(visit.getLocation().getCustomerId());
         dto.setCustomerName(visit.getLocation().getNombre());
         dto.setSequence(calculateSequence(visit));
-        dto.setEta(String.valueOf(visit.getArrivalTime()));
+        dto.setEta(visit.getArrivalTime() != null ? visit.getArrivalTime().toString() : null);
         dto.setEtd(visit.getArrivalTime() != null ?
-                String.valueOf(visit.getArrivalTime().plus(Duration.ofMinutes(visit.getLocation().getTiempoServicioMin()))) : null);
+                visit.getArrivalTime().plus(Duration.ofMinutes(visit.getLocation().getTiempoServicioMin())).toString() : null);
         dto.setLatitude(visit.getLocation().getLatitud());
         dto.setLongitude(visit.getLocation().getLongitud());
+        dto.setCantidad(BigDecimal.valueOf(visit.getLocation().getDemandaCantidad()));
+        dto.setVolumen(BigDecimal.valueOf(visit.getLocation().getDemandaVolumen()));
+        dto.setPeso(BigDecimal.valueOf(visit.getLocation().getDemandaPeso()));
+        dto.setCargaAcumuladaCantidad(BigDecimal.valueOf(visit.getAccumulatedCantidad() != null ? visit.getAccumulatedCantidad() : 0.0));
+        dto.setCargaAcumuladaVolumen(BigDecimal.valueOf(visit.getAccumulatedVolumen() != null ? visit.getAccumulatedVolumen() : 0.0));
+        dto.setCargaAcumuladaPeso(BigDecimal.valueOf(visit.getAccumulatedPeso() != null ? visit.getAccumulatedPeso() : 0.0));
+
+        if (visit.getVehicle() != null) {
+            dto.setVehicleId(visit.getVehicle().getId());
+            dto.setVehiclePatente(visit.getVehicle().getPatente());
+        }
+
         return dto;
     }
 
@@ -496,12 +536,25 @@ public class RouteOptimizationService {
     private OptimizeRouteResponse.StopDTO buildStopDTOFromRouteStop(RouteStop stop) {
         OptimizeRouteResponse.StopDTO dto = new OptimizeRouteResponse.StopDTO();
         dto.setOrderId(stop.getOrder().getId());
+        dto.setCustomerId(stop.getOrder().getCustomer().getId());
         dto.setCustomerName(stop.getOrder().getCustomer().getNombre());
+        dto.setDireccion(stop.getOrder().getCustomer().getDireccion());
         dto.setSequence(stop.getSecuencia());
-        dto.setEta(String.valueOf(stop.getEta()));
-        dto.setEtd(String.valueOf(stop.getEtd()));
+        dto.setEta(stop.getEta() != null ? stop.getEta().toString() : null);
+        dto.setEtd(stop.getEtd() != null ? stop.getEtd().toString() : null);
         dto.setLatitude(stop.getOrder().getCustomer().getLatitud().doubleValue());
         dto.setLongitude(stop.getOrder().getCustomer().getLongitud().doubleValue());
+        dto.setDistanceKmFromPrev(stop.getDistanciaKmDesdeAnterior());
+        dto.setTravelTimeMinFromPrev(stop.getTiempoViajeMínDesdeAnterior());
+        dto.setWaitTimeMin(stop.getTiempoEsperaMin());
+        dto.setCargaAcumuladaCantidad(stop.getCargaAcumuladaCantidad());
+        dto.setCargaAcumuladaVolumen(stop.getCargaAcumuladaVolumen());
+        dto.setCargaAcumuladaPeso(stop.getCargaAcumuladaPeso());
+        dto.setCantidad(stop.getOrder().getCantidad());
+        dto.setVolumen(stop.getOrder().getVolumen());
+        dto.setPeso(stop.getOrder().getPeso());
+        dto.setVehicleId(stop.getVehicle().getId());
+        dto.setVehiclePatente(stop.getVehicle().getPatente());
         return dto;
     }
 }

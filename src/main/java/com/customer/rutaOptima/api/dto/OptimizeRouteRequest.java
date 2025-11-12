@@ -20,10 +20,9 @@ import java.util.List;
 @Builder
 public class OptimizeRouteRequest {
 
-    @NotNull(message = "La fecha es obligatoria")
-    @FutureOrPresent(message = "La fecha debe ser presente o futura")
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
-    private LocalDate fecha;
+    @NotBlank(message = "La fecha es obligatoria")
+    @Pattern(regexp = "^\\d{4}-\\d{2}-\\d{2}$", message = "La fecha debe tener formato YYYY-MM-DD")
+    private String fecha;
 
     @NotEmpty(message = "Debe especificar al menos un vehículo")
     private List<Long> vehicleIds;
@@ -34,10 +33,10 @@ public class OptimizeRouteRequest {
     private String objective;
 
     @Builder.Default
-    private Boolean allowSoftTimeWindowViolations = (Boolean) false;
+    private Boolean allowSoftTimeWindowViolations = false;
 
     @Min(value = 5, message = "El tiempo mínimo de optimización es 5 segundos")
     @Max(value = 300, message = "El tiempo máximo de optimización es 300 segundos")
     @Builder.Default
-    private Integer maxOptimizationTimeSeconds = (Integer) 20;
+    private Integer maxOptimizationTimeSeconds = 20;
 }

@@ -19,10 +19,10 @@ public class OptimizeRouteResponse {
     private Long routePlanId;
     private String status;
     private MetricsDTO metrics;
-    private List<VehicleRouteDTO> routes;
     private List<VehicleRouteDTO> vehicleRoutes;
     private String score;
     private Integer tiempoOptimizacionSeg;
+    private List<StopDTO> stops;
 
     @Data
     @NoArgsConstructor
@@ -61,10 +61,18 @@ public class OptimizeRouteResponse {
         private Integer sequence;
         private String eta;
         private String etd;
+        private Double latitude;
+        private Double longitude;
         private BigDecimal distanceKmFromPrev;
         private Integer travelTimeMinFromPrev;
+        private Integer waitTimeMin;
         private BigDecimal cargaAcumuladaCantidad;
-        private Double latitude;  // Puedes cambiar a Double si prefieres usar Double
-        private Double longitude; // Lo mismo aquí: Double si prefieres
+        private BigDecimal cargaAcumuladaVolumen;
+        private BigDecimal cargaAcumuladaPeso;
+        private BigDecimal cantidad;
+        private BigDecimal volumen;
+        private BigDecimal peso;
+        private Long vehicleId;
+        private String vehiclePatente;
     }
 }

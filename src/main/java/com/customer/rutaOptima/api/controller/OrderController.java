@@ -32,11 +32,13 @@ public class OrderController {
 
     @GetMapping
     public ResponseEntity<List<OrderDTO>> getOrders(
-            @RequestParam String fecha,
+            @RequestParam(required = false) String fecha,
             @RequestParam(required = false) String estado) {
 
         if (fecha == null || fecha.isBlank()) {
-            return ResponseEntity.ok(List.of());
+            return ResponseEntity.ok(orderService.findAll().stream()
+                    .map(this::toDTO)
+                    .collect(Collectors.toList()));
         }
 
         ZoneId zone = ZoneId.systemDefault();
