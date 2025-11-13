@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @RestController
@@ -64,9 +65,9 @@ public class RoutePlanController {
     @PostMapping("/{id}/reoptimize")
     public ResponseEntity<OptimizeRouteResponse> reoptimizeRoutes(@PathVariable Long id) {
         log.info("POST /api/route-plans/{}/reoptimize", id);
-        
+
         OptimizeRouteResponse response = optimizationService.reoptimizeRoutes(id);
-        
+
         return ResponseEntity.ok(response);
     }
 
@@ -78,12 +79,12 @@ public class RoutePlanController {
     @GetMapping("/{id}")
     public ResponseEntity<RoutePlanDTO> getRoutePlanById(@PathVariable Long id) {
         log.info("GET /api/route-plans/{}", id);
-        
+
         RoutePlan routePlan = routePlanRepository.findByIdWithStops(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Plan de rutas no encontrado: " + id));
-        
+
         RoutePlanDTO dto = toDTO(routePlan);
-        
+
         return ResponseEntity.ok(dto);
     }
 
@@ -93,7 +94,7 @@ public class RoutePlanController {
      * GET /api/route-plans?fecha=2025-06-15&estado=OPTIMIZED
      */
     @GetMapping
-    public ResponseEntity<List<RoutePlanDTO>> listRoutePlans(
+    public ResponseEntity<List<OptimizeRouteResponse>> listRoutePlans(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             @RequestParam(required = false) RoutePlan.Estado estado) {
 
@@ -101,27 +102,30 @@ public class RoutePlanController {
 
         List<RoutePlan> plans;
 
+        // Usar queries con JOIN FETCH para evitar LazyInitializationException
         if (fecha != null) {
             ZoneId zone = ZoneId.systemDefault();
             Instant startOfDay = fecha.atStartOfDay(zone).toInstant();
             Instant startNextDay = fecha.plusDays(1).atStartOfDay(zone).toInstant();
 
             if (estado != null) {
-                plans = routePlanRepository.findByFechaBetweenAndEstado(startOfDay, startNextDay, estado);
+                plans = routePlanRepository.findByFechaBetweenAndEstadoWithStops(startOfDay, startNextDay, estado);
             } else {
-                plans = routePlanRepository.findByFechaBetween(startOfDay, startNextDay);
+                plans = routePlanRepository.findByFechaBetweenWithStops(startOfDay, startNextDay);
             }
         } else if (estado != null) {
-            plans = routePlanRepository.findByEstado(estado);
+            plans = routePlanRepository.findByEstadoWithStops(estado);
         } else {
-            plans = routePlanRepository.findAll();
+            plans = routePlanRepository.findAllWithStops();
         }
 
-        List<RoutePlanDTO> dtos = plans.stream()
-                .map(this::toDTO)
+        // Convertir a OptimizeRouteResponse para que coincida con el formato del
+        // frontend
+        List<OptimizeRouteResponse> responses = plans.stream()
+                .map(optimizationService::buildResponseFromPlan)
                 .collect(Collectors.toList());
 
-        return ResponseEntity.ok(dtos);
+        return ResponseEntity.ok(responses);
     }
 
     /**
@@ -132,14 +136,16 @@ public class RoutePlanController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteRoutePlan(@PathVariable Long id) {
         log.info("DELETE /api/route-plans/{}", id);
-        
+
+        Objects.requireNonNull(id, "ID del plan de rutas no puede ser nulo");
+
         RoutePlan routePlan = routePlanRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Plan de rutas no encontrado: " + id));
-        
+
         // En lugar de eliminar, cambiar estado
         routePlan.setEstado(RoutePlan.Estado.FAILED); // Reutilizamos FAILED como cancelado
         routePlanRepository.save(routePlan);
-        
+
         return ResponseEntity.noContent().build();
     }
 
@@ -161,14 +167,14 @@ public class RoutePlanController {
         dto.setMaxOptimizationTimeSeconds(plan.getMaxOptimizationTimeSeconds());
         dto.setCreatedAt(plan.getCreatedAt());
         dto.setUpdatedAt(plan.getUpdatedAt());
-        
+
         if (plan.getStops() != null) {
             List<RouteStopDTO> stops = plan.getStops().stream()
                     .map(this::toStopDTO)
                     .collect(Collectors.toList());
             dto.setStops(stops);
         }
-        
+
         return dto;
     }
 

@@ -16,6 +16,7 @@ public class Location {
     private Long orderId;
     private Long customerId;
     private String nombre;
+    private String direccion;
     private Double latitud;
     private Double longitud;
     private Double demandaCantidad;
@@ -34,13 +35,13 @@ public class Location {
     }
 
     /**
-     * Calcula la distancia en kilómetros a otra ubicación usando la fórmula de Haversine
+     * Calcula la distancia en kilómetros a otra ubicación usando la fórmula de
+     * Haversine
      */
     public double calcularDistanciaKm(Location otra) {
         return calcularDistanciaHaversine(
                 this.latitud, this.longitud,
-                otra.latitud, otra.longitud
-        );
+                otra.latitud, otra.longitud);
     }
 
     /**
@@ -53,7 +54,7 @@ public class Location {
         double lonDistance = Math.toRadians(lon2 - lon1);
         double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
                 + Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2))
-                * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+                        * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
         double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
         return R * c;
