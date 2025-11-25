@@ -49,32 +49,11 @@ public class Customer {
     @Column(nullable = false, precision = 11, scale = 8)
     private BigDecimal longitud;
 
-    /**
-     * Indica si es un cliente nuevo (requiere 5 días de anticipación para el primer pedido)
-     */
-    @Column(name = "es_nuevo", nullable = false)
-    @Builder.Default
-    private Boolean esNuevo = true;
-
     @Column(name = "ventana_horaria_inicio")
     private Instant ventanaHorariaInicio;
 
     @Column(name = "ventana_horaria_fin")
     private Instant ventanaHorariaFin;
-
-    /**
-     * Demanda promedio semanal (para previsión de temporadas)
-     */
-    @Column(name = "demanda_promedio_semanal", precision = 10, scale = 2)
-    @Builder.Default
-    private BigDecimal demandaPromedioSemanal = BigDecimal.ZERO;
-
-    /**
-     * Factor de estacionalidad (1.0 = normal, >1.0 = alta temporada, <1.0 = baja temporada)
-     */
-    @Column(name = "factor_estacionalidad", precision = 5, scale = 2)
-    @Builder.Default
-    private BigDecimal factorEstacionalidad = BigDecimal.ONE;
 
     @Column(length = 50)
     private String telefono;
@@ -82,6 +61,9 @@ public class Customer {
     @Email(message = "El email debe ser válido")
     @Column(length = 255)
     private String email;
+
+    @Column(length = 100)
+    private String zona;
 
     @Column(nullable = false)
     @Builder.Default

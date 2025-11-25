@@ -33,7 +33,7 @@ optaplanner:
 # Configuración JWT
 app:
   jwt:
-    secret: ${JWT_SECRET}
+    secret: ${JWT_SECRET:0ec3557a312047448a3f399d43c86a20}
     expiration-ms: 86400000 # 24 horas
 
 # Actuator
@@ -54,9 +54,9 @@ spring:
       on-profile: dev
   
   datasource:
-    url: ${DB_URL_DEV}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: ${DB_URL_DEV:jdbc:postgresql://localhost:5432/rutaoptima_dev}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:Bryger170180}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10

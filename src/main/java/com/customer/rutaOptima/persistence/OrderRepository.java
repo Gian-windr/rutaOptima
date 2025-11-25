@@ -36,7 +36,4 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     @Query("SELECT COUNT(o) FROM Order o WHERE o.customer.id = :customerId")
     long countByCustomerId(@Param("customerId") Long customerId);
-
-    @Query("SELECT o FROM Order o WHERE o.customer.esNuevo = true AND o.fechaEntrega BETWEEN :fechaInicio AND :fechaFin")
-    List<Order> findOrdersFromNewCustomersInRange(@Param("fechaInicio") Instant fechaInicio, @Param("fechaFin") Instant fechaFin);
 }

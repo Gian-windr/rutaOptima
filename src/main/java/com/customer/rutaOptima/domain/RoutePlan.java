@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Entidad que representa un plan de ruta optimizado
@@ -137,6 +138,13 @@ public class RoutePlan {
      * Calcula las métricas del plan basándose en las paradas
      */
     public void calculateMetrics() {
+        // Inicializar valores por defecto
+        this.kmsTotales = BigDecimal.ZERO;
+        this.tiempoEstimadoMin = 0;
+        this.costoTotal = BigDecimal.ZERO;
+        this.vehiculosUtilizados = 0;
+        this.pedidosAsignados = 0;
+
         if (stops == null || stops.isEmpty()) {
             return;
         }
@@ -147,23 +155,35 @@ public class RoutePlan {
         int pedidosAsignados = 0;
         long vehiculosUnicos = stops.stream()
                 .map(RouteStop::getVehicle)
+                .filter(Objects::nonNull)
                 .distinct()
                 .count();
 
         for (RouteStop stop : stops) {
+            // Sumar distancia
             if (stop.getDistanciaKmDesdeAnterior() != null) {
                 totalKm = totalKm.add(stop.getDistanciaKmDesdeAnterior());
             }
+
+            // Sumar tiempo de viaje
             if (stop.getTiempoViajeMínDesdeAnterior() != null) {
                 totalTiempo += stop.getTiempoViajeMínDesdeAnterior();
             }
+
+            // Sumar tiempo de espera
             if (stop.getTiempoEsperaMin() != null) {
                 totalTiempo += stop.getTiempoEsperaMin();
             }
+
+            // Sumar tiempo de servicio
+            if (stop.getOrder() != null && stop.getOrder().getTiempoServicioEstimadoMin() != null) {
+                totalTiempo += stop.getOrder().getTiempoServicioEstimadoMin();
+            }
+
             pedidosAsignados++;
 
             // Calcular costo basado en km y vehículo
-            if (stop.getDistanciaKmDesdeAnterior() != null && stop.getVehicle() != null) {
+            if (stop.getDistanciaKmDesdeAnterior() != null && stop.getVehicle() != null && stop.getVehicle().getCostoKm() != null) {
                 BigDecimal costoVehiculo = stop.getVehicle().getCostoKm();
                 totalCosto = totalCosto.add(stop.getDistanciaKmDesdeAnterior().multiply(costoVehiculo));
             }

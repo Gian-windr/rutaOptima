@@ -15,10 +15,8 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     List<Customer> findByActivoTrue();
 
-    List<Customer> findByEsNuevo(Boolean esNuevo);
-
     @Query("SELECT c FROM Customer c WHERE c.activo = true ORDER BY c.nombre")
     List<Customer> findAllActiveCustomersOrdered();
-
-    long countByEsNuevoTrue();
+    
+    List<Customer> findByZona(String zona);
 }

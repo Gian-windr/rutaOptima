@@ -46,11 +46,6 @@ public class OrderService {
 
         order.setCustomer(customer);
 
-        // REGLA DE NEGOCIO CLAVE: Validar 5 días de anticipación para clientes nuevos
-        if (customer.getEsNuevo()) {
-            validateNewCustomerLeadTime(order.getFechaEntrega(), customer);
-        }
-
         // Validar fecha no sea en el pasado
         if (order.getFechaEntrega().isBefore(Instant.now())) {
             throw new BusinessException(

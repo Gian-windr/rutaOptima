@@ -47,6 +47,9 @@ public class VehicleService {
         Vehicle existing = findById(id);
         existing.setNombre(vehicle.getNombre());
         existing.setTipo(vehicle.getTipo());
+        existing.setConductor(vehicle.getConductor());
+        existing.setZona(vehicle.getZona());
+        existing.setColor(vehicle.getColor());
         existing.setCapacidadCantidad(vehicle.getCapacidadCantidad());
         existing.setCapacidadVolumen(vehicle.getCapacidadVolumen());
         existing.setCapacidadPeso(vehicle.getCapacidadPeso());

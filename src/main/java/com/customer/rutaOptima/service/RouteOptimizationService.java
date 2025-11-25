@@ -34,7 +34,6 @@ public class RouteOptimizationService {
     private final VehicleRepository vehicleRepository;
     private final RoutePlanRepository routePlanRepository;
     private final RouteStopRepository routeStopRepository;
-    private final TrafficEventRepository trafficEventRepository;
     private final SolverManager<VehicleRoutingSolution, Long> solverManager;
 
     /**
@@ -108,17 +107,7 @@ public class RouteOptimizationService {
             throw new BusinessException("Solo se pueden re-optimizar planes en estado OPTIMIZED");
         }
 
-        // Obtener eventos de tráfico activos
-        List<TrafficEvent> activeEvents = trafficEventRepository.findActiveEventsSince(
-                existingPlan.getCreatedAt()
-        );
-
-        if (activeEvents.isEmpty()) {
-            log.info("No hay eventos de tráfico activos, se retorna el plan existente");
-            return buildResponseFromPlan(existingPlan);
-        }
-
-        log.info("Eventos de tráfico activos: {}", activeEvents.size());
+        log.info("Re-optimizando plan de rutas existente: {}", routePlanId);
 
         // Reconstruir problema con los mismos datos
         List<Order> orders = existingPlan.getStops().stream()
@@ -141,7 +130,7 @@ public class RouteOptimizationService {
 
         // Construir problema considerando tráfico
         VehicleRoutingSolution problem = buildOptimizationProblem(orders, vehicles, newPlan.getId());
-        applyTrafficEvents(problem, activeEvents);
+        log.info("Re-optimizando plan de rutas existente: {}", routePlanId);
 
         try {
             SolverJob<VehicleRoutingSolution, Long> solverJob = solverManager.solve(
@@ -288,28 +277,6 @@ public class RouteOptimizationService {
     }
 
     /**
-     * Aplica eventos de tráfico al problema de optimización.
-     */
-    private void applyTrafficEvents(VehicleRoutingSolution problem, List<TrafficEvent> events) {
-        for (Visit visit : problem.getVisits()) {
-            for (TrafficEvent event : events) {
-                if (event.afectaUbicacion(
-                        BigDecimal.valueOf(visit.getLocation().getLatitud()),
-                        BigDecimal.valueOf(visit.getLocation().getLongitud()))) {
-
-                    // Aumentar tiempo de servicio por el factor de retraso
-                    int tiempoOriginal = visit.getLocation().getTiempoServicioMin();
-                    int tiempoAjustado = (int) Math.ceil(tiempoOriginal * event.getFactorRetraso().doubleValue());
-                    visit.getLocation().setTiempoServicioMin(tiempoAjustado);
-
-                    log.debug("Evento de tráfico aplicado a visita {}: tiempo {} -> {} min",
-                            visit.getId(), tiempoOriginal, tiempoAjustado);
-                }
-            }
-        }
-    }
-
-    /**
      * Guarda los resultados de la optimización en la base de datos.
      */
     private void saveOptimizationResults(RoutePlan routePlan, VehicleRoutingSolution solution) {
@@ -352,8 +319,30 @@ public class RouteOptimizationService {
         stop.setVehicle(vehicle);
         stop.setSecuencia(calculateSequence(visit));
         stop.setEta(visit.getArrivalTime());
-        stop.setEtd(visit.getArrivalTime() != null ?
-                visit.getArrivalTime().plus(Duration.ofMinutes(visit.getLocation().getTiempoServicioMin())) : null);
+
+        // Calcular ETD (tiempo de salida) incluyendo el tiempo de servicio
+        if (visit.getArrivalTime() != null) {
+            stop.setEtd(visit.getArrivalTime().plus(Duration.ofMinutes(visit.getLocation().getTiempoServicioMin())));
+        }
+
+        // Calcular distancia y tiempo de viaje desde la parada anterior usando métodos de Visit
+        double distanciaKm = visit.getDistanciaDesdeAnteriorKm();
+        int tiempoViajeMin = visit.getTiempoViajeDesdeAnteriorMinutos();
+
+        stop.setDistanciaKmDesdeAnterior(BigDecimal.valueOf(distanciaKm));
+        stop.setTiempoViajeMínDesdeAnterior(tiempoViajeMin);
+
+        // Calcular tiempo de espera si llega antes de la ventana horaria
+        int tiempoEsperaMin = 0;
+        if (visit.getArrivalTime() != null && visit.getLocation().tieneVentanaHoraria()) {
+            Instant ventanaInicio = visit.getLocation().getVentanaInicio();
+            if (visit.getArrivalTime().isBefore(ventanaInicio)) {
+                tiempoEsperaMin = (int) Duration.between(visit.getArrivalTime(), ventanaInicio).toMinutes();
+            }
+        }
+        stop.setTiempoEsperaMin(tiempoEsperaMin);
+
+        // Cargas acumuladas
         stop.setCargaAcumuladaCantidad(BigDecimal.valueOf(visit.getAccumulatedCantidad() != null ? visit.getAccumulatedCantidad() : 0.0));
         stop.setCargaAcumuladaVolumen(BigDecimal.valueOf(visit.getAccumulatedVolumen() != null ? visit.getAccumulatedVolumen() : 0.0));
         stop.setCargaAcumuladaPeso(BigDecimal.valueOf(visit.getAccumulatedPeso() != null ? visit.getAccumulatedPeso() : 0.0));

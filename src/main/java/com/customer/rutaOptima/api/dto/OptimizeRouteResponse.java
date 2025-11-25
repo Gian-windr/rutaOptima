@@ -44,6 +44,9 @@ public class OptimizeRouteResponse {
     public static class VehicleRouteDTO {
         private Long vehicleId;
         private String vehicleName;
+        private String conductor;
+        private String zona;
+        private String color;
         private List<StopDTO> stops;
         private BigDecimal totalKm;
         private Integer totalTimeMin;

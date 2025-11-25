@@ -37,16 +37,16 @@ public class CustomerDTO {
     @DecimalMax(value = "180.0")
     private BigDecimal longitud;
 
-    @Builder.Default
-    private Boolean esNuevo = (Boolean) true;
     private Instant ventanaHorariaInicio;
+    
     private Instant ventanaHorariaFin;
-    private BigDecimal demandaPromedioSemanal;
-    private BigDecimal factorEstacionalidad;
+    
     private String telefono;
 
     @Email
     private String email;
+
+    private String zona;
 
     @Builder.Default
     private Boolean activo = (Boolean) true;

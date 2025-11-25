@@ -70,13 +70,11 @@ public class CustomerController {
                 .direccion(customer.getDireccion())
                 .latitud(customer.getLatitud())
                 .longitud(customer.getLongitud())
-                .esNuevo(customer.getEsNuevo())
                 .ventanaHorariaInicio(customer.getVentanaHorariaInicio())
                 .ventanaHorariaFin(customer.getVentanaHorariaFin())
-                .demandaPromedioSemanal(customer.getDemandaPromedioSemanal())
-                .factorEstacionalidad(customer.getFactorEstacionalidad())
                 .telefono(customer.getTelefono())
                 .email(customer.getEmail())
+                .zona(customer.getZona())
                 .activo(customer.getActivo())
                 .build();
     }
@@ -87,13 +85,11 @@ public class CustomerController {
                 .direccion(dto.getDireccion())
                 .latitud(dto.getLatitud())
                 .longitud(dto.getLongitud())
-                .esNuevo(dto.getEsNuevo() != null ? dto.getEsNuevo() : true)
                 .ventanaHorariaInicio(dto.getVentanaHorariaInicio())
                 .ventanaHorariaFin(dto.getVentanaHorariaFin())
-                .demandaPromedioSemanal(dto.getDemandaPromedioSemanal())
-                .factorEstacionalidad(dto.getFactorEstacionalidad())
                 .telefono(dto.getTelefono())
                 .email(dto.getEmail())
+                .zona(dto.getZona())
                 .activo(dto.getActivo() != null ? dto.getActivo() : true)
                 .build();
     }

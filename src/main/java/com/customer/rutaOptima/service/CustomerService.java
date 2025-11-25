@@ -49,13 +49,11 @@ public class CustomerService {
         existing.setDireccion(customer.getDireccion());
         existing.setLatitud(customer.getLatitud());
         existing.setLongitud(customer.getLongitud());
-        existing.setEsNuevo(customer.getEsNuevo());
         existing.setVentanaHorariaInicio(customer.getVentanaHorariaInicio());
         existing.setVentanaHorariaFin(customer.getVentanaHorariaFin());
         existing.setTelefono(customer.getTelefono());
         existing.setEmail(customer.getEmail());
-        existing.setDemandaPromedioSemanal(customer.getDemandaPromedioSemanal());
-        existing.setFactorEstacionalidad(customer.getFactorEstacionalidad());
+        existing.setZona(customer.getZona());
         return customerRepository.save(existing);
     }
 

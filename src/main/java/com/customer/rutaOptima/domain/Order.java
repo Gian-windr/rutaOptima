@@ -90,6 +90,16 @@ public class Order {
         if (estado == null) {
             estado = "PENDIENTE";
         }
+        
+        // Validar que la fecha de entrega sea al menos 3 días después
+        if (fechaEntrega != null) {
+            Instant minimoFecha = Instant.now().plus(3, java.time.temporal.ChronoUnit.DAYS);
+            if (fechaEntrega.isBefore(minimoFecha)) {
+                throw new IllegalArgumentException(
+                    "La fecha de entrega debe ser al menos 3 días después de la fecha actual"
+                );
+            }
+        }
     }
 
     @PreUpdate

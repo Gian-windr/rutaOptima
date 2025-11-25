@@ -55,6 +55,16 @@ public class VehicleDTO {
     @Builder.Default
     private Boolean activo = (Boolean) true;
 
+    @NotBlank(message = "El nombre del conductor es obligatorio")
+    private String conductor;
+
+    private String zona;
+
+    @NotBlank(message = "El color es obligatorio")
+    @Pattern(regexp = "^#[0-9A-Fa-f]{6}$", message = "El color debe ser un código hexadecimal válido (ej: #3B82F6)")
+    @Builder.Default
+    private String color = "#3B82F6";
+
     @NotNull(message = "La latitud del depósito es obligatoria")
     @DecimalMin(value = "-90.0")
     @DecimalMax(value = "90.0")

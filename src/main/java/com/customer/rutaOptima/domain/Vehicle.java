@@ -70,6 +70,18 @@ public class Vehicle {
     @Builder.Default
     private Boolean activo = true;
 
+    @NotBlank(message = "El nombre del conductor es obligatorio")
+    @Column(nullable = false, length = 255)
+    private String conductor;
+
+    @Column(length = 100)
+    private String zona;
+
+    @NotBlank(message = "El color de identificación es obligatorio")
+    @Column(nullable = false, length = 7)
+    @Builder.Default
+    private String color = "#3B82F6";
+
     @NotNull(message = "La latitud del depósito es obligatoria")
     @DecimalMin(value = "-90.0", message = "La latitud debe estar entre -90 y 90")
     @DecimalMax(value = "90.0", message = "La latitud debe estar entre -90 y 90")
