@@ -1,181 +1,109 @@
 package com.customer.rutaOptima.optimization.solver;
 
-import com.customer.rutaOptima.optimization.domain.Visit;
+import java.math.BigDecimal;
+
 import org.optaplanner.core.api.score.buildin.hardsoft.HardSoftScore;
 import org.optaplanner.core.api.score.stream.Constraint;
 import org.optaplanner.core.api.score.stream.ConstraintFactory;
 import org.optaplanner.core.api.score.stream.ConstraintProvider;
-import org.optaplanner.core.api.score.stream.Joiners;
 
-import java.time.Duration;
-import java.time.Instant;
+import com.customer.rutaOptima.optimization.domain.Visit;
 
 /**
- * Define las restricciones del problema de optimización de rutas.
- * OptaPlanner usará estas reglas para evaluar soluciones y buscar la óptima.
+ * Define las restricciones del problema de ruteo.
+ * - Hard constraints: deben cumplirse (capacidad, zonas)
+ * - Soft constraints: se minimizan (distancia, tiempo)
  */
 public class VehicleRoutingConstraintProvider implements ConstraintProvider {
 
     @Override
     public Constraint[] defineConstraints(ConstraintFactory constraintFactory) {
-        return new Constraint[]{
-                // Hard constraints (no pueden violarse)
-                vehicleCapacityCantidad(constraintFactory),
-                vehicleCapacityVolumen(constraintFactory),
-                vehicleCapacityPeso(constraintFactory),
-                timeWindowStart(constraintFactory),
-                timeWindowEnd(constraintFactory),
-                workShiftEnd(constraintFactory),
-                
-                // Soft constraints (minimizar/optimizar)
-                minimizeDistance(constraintFactory),
-                minimizeTravelTime(constraintFactory),
-                minimizeVehicles(constraintFactory),
-                prioritizeHighPriorityOrders(constraintFactory)
+        return new Constraint[] {
+            // Hard constraints
+            vehicleCapacityCantidad(constraintFactory),
+            vehicleCapacityVolumen(constraintFactory),
+            vehicleCapacityPeso(constraintFactory),
+            vehicleZoneMatch(constraintFactory),
+            
+            // Soft constraints
+            minimizeTotalDistance(constraintFactory),
+            minimizeTotalTravelTime(constraintFactory)
         };
     }
 
-    // ========== HARD CONSTRAINTS ==========
-
-    /**
-     * La carga acumulada de cantidad no puede exceder la capacidad del vehículo.
-     */
-    protected Constraint vehicleCapacityCantidad(ConstraintFactory constraintFactory) {
+    // Hard: La cantidad acumulada no debe exceder la capacidad del vehículo
+    Constraint vehicleCapacityCantidad(ConstraintFactory constraintFactory) {
         return constraintFactory.forEach(Visit.class)
-                .filter(visit -> visit.getVehicle() != null)
-                .filter(visit -> visit.getAccumulatedCantidad() != null)
-                .filter(visit -> visit.getAccumulatedCantidad() > visit.getVehicle().getCapacidadCantidad())
-                .penalize(HardSoftScore.ONE_HARD,
-                        visit -> (int) (visit.getAccumulatedCantidad() - visit.getVehicle().getCapacidadCantidad()))
-                .asConstraint("Capacidad cantidad del vehículo excedida");
-    }
-
-    /**
-     * La carga acumulada de volumen no puede exceder la capacidad del vehículo.
-     */
-    protected Constraint vehicleCapacityVolumen(ConstraintFactory constraintFactory) {
-        return constraintFactory.forEach(Visit.class)
-                .filter(visit -> visit.getVehicle() != null)
-                .filter(visit -> visit.getAccumulatedVolumen() != null)
-                .filter(visit -> visit.getAccumulatedVolumen() > visit.getVehicle().getCapacidadVolumen())
-                .penalize(HardSoftScore.ONE_HARD,
-                        visit -> (int) (visit.getAccumulatedVolumen() - visit.getVehicle().getCapacidadVolumen()))
-                .asConstraint("Capacidad volumen del vehículo excedida");
-    }
-
-    /**
-     * La carga acumulada de peso no puede exceder la capacidad del vehículo.
-     */
-    protected Constraint vehicleCapacityPeso(ConstraintFactory constraintFactory) {
-        return constraintFactory.forEach(Visit.class)
-                .filter(visit -> visit.getVehicle() != null)
-                .filter(visit -> visit.getAccumulatedPeso() != null)
-                .filter(visit -> visit.getAccumulatedPeso() > visit.getVehicle().getCapacidadPeso())
-                .penalize(HardSoftScore.ONE_HARD,
-                        visit -> (int) (visit.getAccumulatedPeso() - visit.getVehicle().getCapacidadPeso()))
-                .asConstraint("Capacidad peso del vehículo excedida");
-    }
-
-    /**
-     * No se puede llegar antes de la ventana horaria del cliente.
-     */
-    protected Constraint timeWindowStart(ConstraintFactory constraintFactory) {
-        return constraintFactory.forEach(Visit.class)
-                .filter(visit -> visit.getArrivalTime() != null)
-                .filter(visit -> visit.getLocation().getVentanaInicio() != null)
-                .filter(visit -> visit.getArrivalTime().isBefore(visit.getLocation().getVentanaInicio()))
-                .penalize(HardSoftScore.ONE_HARD,
-                        visit -> (int) java.time.Duration.between(
-                                visit.getArrivalTime(),
-                                visit.getLocation().getVentanaInicio()
-                        ).toMinutes())
-                .asConstraint("Llegada antes de ventana horaria");
-    }
-
-    /**
-     * No se puede llegar después de la ventana horaria del cliente.
-     */
-    protected Constraint timeWindowEnd(ConstraintFactory constraintFactory) {
-        return constraintFactory.forEach(Visit.class)
-                .filter(visit -> visit.getArrivalTime() != null)
-                .filter(visit -> visit.getLocation().getVentanaFin() != null)
-                .filter(visit -> visit.getArrivalTime().isAfter(visit.getLocation().getVentanaFin()))
-                .penalize(HardSoftScore.ONE_HARD,
-                        visit -> (int) java.time.Duration.between(
-                                visit.getLocation().getVentanaFin(),
-                                visit.getArrivalTime()
-                        ).toMinutes())
-                .asConstraint("Llegada después de ventana horaria");
-    }
-
-    /**
-     * El vehículo debe terminar su ruta antes del fin de jornada.
-     */
-    protected Constraint workShiftEnd(ConstraintFactory constraintFactory) {
-        return constraintFactory.forEach(Visit.class)
-                .filter(visit -> visit.getVehicle() != null)
-                .filter(visit -> visit.getArrivalTime() != null)
-                .filter(visit -> {
-                    Instant departureTime = visit.getArrivalTime()
-                            .plus(Duration.ofMinutes(visit.getLocation().getTiempoServicioMin()));
-                    return departureTime.isAfter(visit.getVehicle().getJornadaFin());
+            .filter(visit -> visit.getVehicle() != null && visit.getAccumulatedCantidad() != null)
+            .filter(visit -> visit.getAccumulatedCantidad().compareTo(
+                visit.getVehicle().getCapacidadCantidad()) > 0)
+            .penalize(HardSoftScore.ONE_HARD,
+                visit -> {
+                    BigDecimal excess = visit.getAccumulatedCantidad()
+                        .subtract(visit.getVehicle().getCapacidadCantidad());
+                    return excess.intValue();
                 })
-                .penalize(HardSoftScore.ONE_HARD,
-                        visit -> {
-                            Instant departureTime = visit.getArrivalTime()
-                                    .plus(Duration.ofMinutes(visit.getLocation().getTiempoServicioMin()));
-                            return (int) java.time.Duration.between(
-                                    visit.getVehicle().getJornadaFin(),
-                                    departureTime
-                            ).toMinutes();
-                        })
-                .asConstraint("Excede jornada laboral del vehículo");
+            .asConstraint("Capacidad cantidad del vehículo");
     }
 
-    // ========== SOFT CONSTRAINTS ==========
-
-    /**
-     * Minimizar la distancia total recorrida.
-     */
-    protected Constraint minimizeDistance(ConstraintFactory constraintFactory) {
+    // Hard: El volumen acumulado no debe exceder la capacidad del vehículo
+    Constraint vehicleCapacityVolumen(ConstraintFactory constraintFactory) {
         return constraintFactory.forEach(Visit.class)
-                .filter(visit -> visit.getVehicle() != null)
-                .penalize(HardSoftScore.ONE_SOFT,
-                        Visit::getDistanciaDesdeAnteriorMetros)
-                .asConstraint("Minimizar distancia total");
+            .filter(visit -> visit.getVehicle() != null && visit.getAccumulatedVolumen() != null)
+            .filter(visit -> visit.getAccumulatedVolumen().compareTo(
+                visit.getVehicle().getCapacidadVolumen()) > 0)
+            .penalize(HardSoftScore.ONE_HARD,
+                visit -> {
+                    BigDecimal excess = visit.getAccumulatedVolumen()
+                        .subtract(visit.getVehicle().getCapacidadVolumen());
+                    return excess.intValue();
+                })
+            .asConstraint("Capacidad volumen del vehículo");
     }
 
-    /**
-     * Minimizar el tiempo total de viaje.
-     */
-    protected Constraint minimizeTravelTime(ConstraintFactory constraintFactory) {
+    // Hard: El peso acumulado no debe exceder la capacidad del vehículo
+    Constraint vehicleCapacityPeso(ConstraintFactory constraintFactory) {
         return constraintFactory.forEach(Visit.class)
-                .filter(visit -> visit.getVehicle() != null)
-                .penalize(HardSoftScore.ONE_SOFT,
-                        Visit::getTiempoViajeDesdeAnteriorMinutos)
-                .asConstraint("Minimizar tiempo de viaje");
+            .filter(visit -> visit.getVehicle() != null && visit.getAccumulatedPeso() != null)
+            .filter(visit -> visit.getAccumulatedPeso().compareTo(
+                visit.getVehicle().getCapacidadPeso()) > 0)
+            .penalize(HardSoftScore.ONE_HARD,
+                visit -> {
+                    BigDecimal excess = visit.getAccumulatedPeso()
+                        .subtract(visit.getVehicle().getCapacidadPeso());
+                    return excess.intValue();
+                })
+            .asConstraint("Capacidad peso del vehículo");
     }
 
-    /**
-     * Minimizar la cantidad de vehículos utilizados.
-     */
-    protected Constraint minimizeVehicles(ConstraintFactory constraintFactory) {
+    // Hard: Las visitas deben estar en la zona del vehículo
+    Constraint vehicleZoneMatch(ConstraintFactory constraintFactory) {
         return constraintFactory.forEach(Visit.class)
-                .filter(visit -> visit.getVehicle() != null)
-                .filter(visit -> visit.getPreviousVisit() == null) // Primera visita de cada vehículo
-                .penalize(HardSoftScore.ofSoft(1000))
-                .asConstraint("Minimizar cantidad de vehículos");
+            .filter(visit -> visit.getVehicle() != null && visit.getLocation() != null)
+            .filter(visit -> {
+                String vehicleZone = visit.getVehicle().getZona();
+                String visitZone = visit.getLocation().getZona();
+                return vehicleZone != null && visitZone != null && !vehicleZone.equalsIgnoreCase(visitZone);
+            })
+            .penalize(HardSoftScore.ONE_HARD, visit -> 100)
+            .asConstraint("Vehículo debe estar en la zona correcta");
     }
 
-    /**
-     * Priorizar pedidos de alta prioridad (asignarlos primero).
-     */
-    protected Constraint prioritizeHighPriorityOrders(ConstraintFactory constraintFactory) {
+    // Soft: Minimizar la distancia total (usando OSRM - ya calculado en shadow variables)
+    Constraint minimizeTotalDistance(ConstraintFactory constraintFactory) {
         return constraintFactory.forEach(Visit.class)
-                .filter(visit -> visit.getVehicle() != null)
-                .filter(visit -> visit.getLocation().getPrioridad() > 1)
-                .reward(HardSoftScore.ONE_SOFT,
-                        visit -> visit.getLocation().getPrioridad() * 100)
-                .asConstraint("Priorizar pedidos importantes");
+            .filter(visit -> visit.getDistanceFromPreviousKm() != null)
+            .penalize(HardSoftScore.ONE_SOFT,
+                visit -> (int) (visit.getDistanceFromPreviousKm() * 1000)) // metros
+            .asConstraint("Minimizar distancia total");
+    }
+
+    // Soft: Minimizar el tiempo total de viaje
+    Constraint minimizeTotalTravelTime(ConstraintFactory constraintFactory) {
+        return constraintFactory.forEach(Visit.class)
+            .filter(visit -> visit.getTravelTimeFromPreviousMin() != null)
+            .penalize(HardSoftScore.ONE_SOFT,
+                Visit::getTravelTimeFromPreviousMin)
+            .asConstraint("Minimizar tiempo de viaje");
     }
 }

@@ -73,7 +73,7 @@
 			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
 
-		<!-- OptaPlanner for route optimization (VRPTW) -->
+		<!-- OptaPlanner for intelligent route optimization -->
 		<dependency>
 			<groupId>org.optaplanner</groupId>
 			<artifactId>optaplanner-spring-boot-starter</artifactId>

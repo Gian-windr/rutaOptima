@@ -1,15 +1,16 @@
 package com.customer.rutaOptima.api.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
-import jakarta.validation.constraints.*;
+import java.util.List;
+
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.List;
 
 /**
  * DTO para solicitar la optimización de rutas
@@ -26,6 +27,9 @@ public class OptimizeRouteRequest {
 
     @NotEmpty(message = "Debe especificar al menos un vehículo")
     private List<Long> vehicleIds;
+
+    // Opcional: IDs específicos de órdenes a optimizar. Si null/vacío, usa todas las pendientes
+    private List<Long> orderIds;
 
     @NotBlank(message = "El objetivo es obligatorio")
     @Pattern(regexp = "MINIMIZE_DISTANCE|MINIMIZE_TIME|MINIMIZE_COST",

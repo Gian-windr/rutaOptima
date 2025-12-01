@@ -1,67 +1,58 @@
 package com.customer.rutaOptima.config;
 
-import com.customer.rutaOptima.optimization.domain.VehicleRoutingSolution;
-import com.customer.rutaOptima.optimization.domain.Visit;
-import com.customer.rutaOptima.optimization.solver.VehicleRoutingConstraintProvider;
+import java.time.Duration;
+
 import org.optaplanner.core.api.solver.SolverFactory;
 import org.optaplanner.core.api.solver.SolverManager;
+import org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicPhaseConfig;
+import org.optaplanner.core.config.constructionheuristic.ConstructionHeuristicType;
+import org.optaplanner.core.config.localsearch.LocalSearchPhaseConfig;
 import org.optaplanner.core.config.solver.SolverConfig;
 import org.optaplanner.core.config.solver.termination.TerminationConfig;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.time.Duration;
+import com.customer.rutaOptima.optimization.domain.VehicleRoutingSolution;
+import com.customer.rutaOptima.optimization.solver.VehicleRoutingConstraintProvider;
 
 /**
- * Configuración de OptaPlanner.
- * Complementa la configuración en application.yml.
+ * Configuración de OptaPlanner para optimización de rutas.
+ * Integra OSRM para distancias reales a través de shadow variables.
  */
 @Configuration
 public class OptaPlannerConfig {
 
-    @Value("${optaplanner.solver.termination.spent-limit:20s}")
-    private String spentLimit;
-
-    @Value("${optaplanner.solver.environment-mode:REPRODUCIBLE}")
-    private String environmentMode;
-
-    /**
-     * Bean de SolverManager para resolver problemas de optimización.
-     * Spring Boot auto-configura este bean, pero lo definimos explícitamente
-     * para tener mayor control sobre la configuración.
-     */
     @Bean
-    public SolverManager<VehicleRoutingSolution, Long> solverManager() {
-        SolverFactory<VehicleRoutingSolution> solverFactory = SolverFactory.create(solverConfig());
-        return SolverManager.create(solverFactory);
+    public SolverConfig solverConfig() {
+        // Fase 1: Construction Heuristic
+        // ALLOCATE_ENTITY_FROM_QUEUE inicializa todas las variables de planificación
+        ConstructionHeuristicPhaseConfig constructionHeuristicConfig = new ConstructionHeuristicPhaseConfig()
+            .withConstructionHeuristicType(ConstructionHeuristicType.ALLOCATE_ENTITY_FROM_QUEUE);
+        
+        // Fase 2: Local Search (mejorar la solución inicial)
+        LocalSearchPhaseConfig localSearchConfig = new LocalSearchPhaseConfig()
+            .withTerminationConfig(new TerminationConfig()
+                .withSecondsSpentLimit(25L)); // 25 segundos para Local Search
+        
+        return new SolverConfig()
+            .withSolutionClass(VehicleRoutingSolution.class)
+            .withEntityClasses(com.customer.rutaOptima.optimization.domain.Visit.class)
+            .withConstraintProviderClass(VehicleRoutingConstraintProvider.class)
+            .withPhases(constructionHeuristicConfig, localSearchConfig)
+            .withTerminationConfig(new TerminationConfig()
+                .withSpentLimit(Duration.ofSeconds(30)) // 30 segundos máximo total
+                .withBestScoreLimit("0hard/*soft")) // para si encuentra solución perfecta
+            .withEnvironmentMode(org.optaplanner.core.config.solver.EnvironmentMode.REPRODUCIBLE);
     }
 
-    /**
-     * Configuración del solver de OptaPlanner.
-     */
-    private SolverConfig solverConfig() {
-        SolverConfig solverConfig = new SolverConfig();
-        
-        // Clase de la solución
-        solverConfig.withSolutionClass(VehicleRoutingSolution.class);
-        
-        // Clases de las entidades de planificación
-        solverConfig.withEntityClasses(Visit.class);
-        
-        // Proveedor de restricciones
-        solverConfig.withConstraintProviderClass(VehicleRoutingConstraintProvider.class);
-        
-        // Configuración de terminación
-        TerminationConfig terminationConfig = new TerminationConfig();
-        terminationConfig.withSpentLimit(Duration.parse("PT" + spentLimit.toUpperCase()));
-        solverConfig.withTerminationConfig(terminationConfig);
-        
-        // Modo de ambiente (REPRODUCIBLE para resultados consistentes)
-        solverConfig.withEnvironmentMode(
-                org.optaplanner.core.config.solver.EnvironmentMode.valueOf(environmentMode)
-        );
-        
-        return solverConfig;
+    @Bean
+    public SolverFactory<VehicleRoutingSolution> solverFactory(SolverConfig solverConfig) {
+        return SolverFactory.create(solverConfig);
+    }
+
+    @Bean
+    public SolverManager<VehicleRoutingSolution, Long> solverManager(
+            SolverFactory<VehicleRoutingSolution> solverFactory) {
+        return SolverManager.create(solverFactory);
     }
 }

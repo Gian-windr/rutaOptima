@@ -1,16 +1,26 @@
 package com.customer.rutaOptima.api.controller;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.customer.rutaOptima.api.dto.VehicleDTO;
 import com.customer.rutaOptima.domain.Vehicle;
 import com.customer.rutaOptima.service.VehicleService;
+
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Controlador REST para vehículos
@@ -97,7 +107,7 @@ public class VehicleController {
                 .capacidadPeso(dto.getCapacidadPeso())
                 .velocidadKmh(dto.getVelocidadKmh())
                 .costoKm(dto.getCostoKm())
-                .activo(Boolean.valueOf(dto.getActivo() == null || dto.getActivo()))
+                .activo(dto.getActivo() == null || dto.getActivo())
                 .depotLatitud(dto.getDepotLatitud())
                 .depotLongitud(dto.getDepotLongitud())
                 .jornadaInicio(dto.getJornadaInicio())

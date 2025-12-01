@@ -1,25 +1,34 @@
 package com.customer.rutaOptima.api.controller;
 
-import com.customer.rutaOptima.api.dto.OptimizeRouteRequest;
-import com.customer.rutaOptima.api.dto.OptimizeRouteResponse;
-import com.customer.rutaOptima.domain.RoutePlan;
-import com.customer.rutaOptima.domain.RouteStop;
-import com.customer.rutaOptima.config.exception.ResourceNotFoundException;
-import com.customer.rutaOptima.persistence.RoutePlanRepository;
-import com.customer.rutaOptima.service.RouteOptimizationService;
-import jakarta.validation.Valid;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.customer.rutaOptima.api.dto.OptimizeRouteRequest;
+import com.customer.rutaOptima.api.dto.OptimizeRouteResponse;
+import com.customer.rutaOptima.config.exception.ResourceNotFoundException;
+import com.customer.rutaOptima.domain.RoutePlan;
+import com.customer.rutaOptima.domain.RouteStop;
+import com.customer.rutaOptima.persistence.RoutePlanRepository;
+import com.customer.rutaOptima.service.RouteOptimizationService;
+
+import jakarta.validation.Valid;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/route-plans")
@@ -31,7 +40,7 @@ public class RoutePlanController {
     private final RoutePlanRepository routePlanRepository;
 
     /**
-     * Optimiza rutas para una fecha específica.
+     * Optimiza rutas para una fecha específica con DISTANCIAS REALES (OSRM).
      * 
      * POST /api/route-plans/optimize
      */
@@ -39,34 +48,12 @@ public class RoutePlanController {
     public ResponseEntity<OptimizeRouteResponse> optimizeRoutes(
             @Valid @RequestBody OptimizeRouteRequest request) {
 
-        log.info("POST /api/route-plans/optimize - Fecha: {}, Objetivo: {}",
-                request.getFecha(), request.getObjective());
+        log.info("POST /api/route-plans/optimize - Fecha: {}, Vehículos: {}",
+                request.getFecha(), request.getVehicleIds());
 
-        // Parsear la fecha String a LocalDate
-        LocalDate fecha = LocalDate.parse(request.getFecha());
+        OptimizeRouteResponse response = optimizationService
+            .optimizeRoutesWithRealDistances(request);
 
-        // Convertir a rango de Instant para el día completo
-        ZoneId zone = ZoneId.systemDefault();
-        Instant startOfDay = fecha.atStartOfDay(zone).toInstant();
-        Instant startNextDay = fecha.plusDays(1).atStartOfDay(zone).toInstant();
-
-        OptimizeRouteResponse response = optimizationService.optimizeRoutes(
-                request, startOfDay, startNextDay);
-
-        return ResponseEntity.ok(response);
-    }
-
-    /**
-     * Re-optimiza un plan existente considerando eventos de tráfico.
-     * 
-     * POST /api/route-plans/{id}/reoptimize
-     */
-    @PostMapping("/{id}/reoptimize")
-    public ResponseEntity<OptimizeRouteResponse> reoptimizeRoutes(@PathVariable Long id) {
-        log.info("POST /api/route-plans/{}/reoptimize", id);
-        
-        OptimizeRouteResponse response = optimizationService.reoptimizeRoutes(id);
-        
         return ResponseEntity.ok(response);
     }
 

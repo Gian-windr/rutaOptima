@@ -1,13 +1,37 @@
 package com.customer.rutaOptima.domain;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.*;
-import lombok.*;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.ZoneId;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.ForeignKey;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
  * Entidad que representa un pedido a entregar
@@ -142,19 +166,19 @@ public class Order {
                 return null;
             }
             // Si el customer ya devuelve Instant
-            if (val instanceof Instant) {
-                return (Instant) val;
+            if (val instanceof Instant instant) {
+                return instant;
             }
             // Si devuelve LocalDateTime
-            if (val instanceof LocalDateTime) {
-                return ((LocalDateTime) val).atZone(ZoneId.systemDefault()).toInstant();
+            if (val instanceof LocalDateTime localDateTime) {
+                return localDateTime.atZone(ZoneId.systemDefault()).toInstant();
             }
             // Si devuelve LocalDate (usar inicio del día)
-            if (val instanceof LocalDate) {
-                return ((LocalDate) val).atStartOfDay(ZoneId.systemDefault()).toInstant();
+            if (val instanceof LocalDate localDate) {
+                return localDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
             }
             // Si devuelve LocalTime, combinar con la fecha de entrega (o hoy)
-            if (val instanceof LocalTime) {
+            if (val instanceof LocalTime localTime) {
                 LocalDate date = (fechaEntrega != null)
                         ? LocalDateTime.ofInstant(fechaEntrega, ZoneId.systemDefault()).toLocalDate()
                         : LocalDate.now(ZoneId.systemDefault());

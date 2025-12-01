@@ -21,10 +21,11 @@ RutaÓptima es una plataforma que automatiza y optimiza la gestión de rutas de 
 - Control de capacidad de carga por tipo de vehículo
 
 ### Optimización de Rutas
-- Cálculo automático de las mejores rutas usando algoritmos avanzados (OptaPlanner)
+- Cálculo automático de rutas con distancias reales usando OSRM (Open Source Routing Machine)
+- Algoritmo Nearest Neighbor TSP para secuenciación óptima
 - Asignación inteligente de pedidos por zona geográfica
 - Distribución de carga según capacidad del vehículo
-- Estimación de tiempos de llegada (ETA) y salida (ETD)
+- Estimación de tiempos de llegada (ETA) y salida (ETD) basados en tráfico real
 
 ### Gestión de Pedidos
 - Registro de clientes y direcciones de entrega
@@ -49,7 +50,7 @@ RutaÓptima es una plataforma que automatiza y optimiza la gestión de rutas de 
 ### Backend
 - Java 21
 - Spring Boot 3.5.7
-- OptaPlanner 9.44.0 (optimización de rutas)
+- OSRM (Open Source Routing Machine) para distancias reales por calles
 - PostgreSQL 15
 - Flyway (migraciones de base de datos)
 - Spring Security + JWT (autenticación)

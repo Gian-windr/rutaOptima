@@ -21,20 +21,19 @@ spring:
     baseline-on-migrate: true
     locations: classpath:db/migration
 
-# Configuración de OptaPlanner
-optaplanner:
-  solver:
-    termination:
-      spent-limit: 20s
-    environment-mode: REPRODUCIBLE
-  solver-manager:
-    parallel-solver-count: 4
-
 # Configuración JWT
 app:
   jwt:
     secret: ${JWT_SECRET:0ec3557a312047448a3f399d43c86a20}
     expiration-ms: 86400000 # 24 horas
+
+# OptaPlanner
+optaplanner:
+  solver:
+    termination:
+      spent-limit: 30s
+      best-score-limit: "0hard/*soft"
+    environment-mode: REPRODUCIBLE
 
 # Actuator
 management:
