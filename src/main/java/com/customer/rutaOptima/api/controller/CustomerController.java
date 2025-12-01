@@ -1,0 +1,106 @@
+package com.customer.rutaOptima.api.controller;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.customer.rutaOptima.api.dto.CustomerDTO;
+import com.customer.rutaOptima.domain.Customer;
+import com.customer.rutaOptima.service.CustomerService;
+
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
+
+/**
+ * Controlador REST para clientes
+ */
+@RestController
+@RequestMapping("/api/customers")
+@RequiredArgsConstructor
+public class CustomerController {
+
+    private final CustomerService customerService;
+
+    @GetMapping
+    public ResponseEntity<List<CustomerDTO>> getAllCustomers(@RequestParam(required = false) Boolean activo) {
+        List<Customer> customers = (activo != null && activo) 
+                ? customerService.findAllActive() 
+                : customerService.findAll();
+        
+        List<CustomerDTO> dtos = customers.stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(dtos);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<CustomerDTO> getCustomerById(@PathVariable Long id) {
+        Customer customer = customerService.findById(id);
+        return ResponseEntity.ok(toDTO(customer));
+    }
+
+    @PostMapping
+    public ResponseEntity<CustomerDTO> createCustomer(@Valid @RequestBody CustomerDTO dto) {
+        Customer customer = toEntity(dto);
+        Customer created = customerService.createCustomer(customer);
+        return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(created));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CustomerDTO> updateCustomer(@PathVariable Long id, 
+                                                       @Valid @RequestBody CustomerDTO dto) {
+        Customer customer = toEntity(dto);
+        Customer updated = customerService.updateCustomer(id, customer);
+        return ResponseEntity.ok(toDTO(updated));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteCustomer(@PathVariable Long id) {
+        customerService.deleteCustomer(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // Mapeo simple (en producción usar MapStruct)
+    private CustomerDTO toDTO(Customer customer) {
+        return CustomerDTO.builder()
+                .id(customer.getId())
+                .nombre(customer.getNombre())
+                .direccion(customer.getDireccion())
+                .latitud(customer.getLatitud())
+                .longitud(customer.getLongitud())
+                .ventanaHorariaInicio(customer.getVentanaHorariaInicio())
+                .ventanaHorariaFin(customer.getVentanaHorariaFin())
+                .telefono(customer.getTelefono())
+                .email(customer.getEmail())
+                .zona(customer.getZona())
+                .activo(customer.getActivo())
+                .build();
+    }
+
+    private Customer toEntity(CustomerDTO dto) {
+        return Customer.builder()
+                .nombre(dto.getNombre())
+                .direccion(dto.getDireccion())
+                .latitud(dto.getLatitud())
+                .longitud(dto.getLongitud())
+                .ventanaHorariaInicio(dto.getVentanaHorariaInicio())
+                .ventanaHorariaFin(dto.getVentanaHorariaFin())
+                .telefono(dto.getTelefono())
+                .email(dto.getEmail())
+                .zona(dto.getZona())
+                .activo(dto.getActivo() != null ? dto.getActivo() : Boolean.TRUE)
+                .build();
+    }
+}

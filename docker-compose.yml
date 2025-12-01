@@ -1,0 +1,62 @@
+services:
+  # Base de Datos PostgreSQL
+  rutaoptima-db:
+    image: postgres:15-alpine
+    container_name: ruta-optima-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      DB_PORT: ${DB_PORT}
+    ports:
+      - "${DB_PORT}:${DB_PORT}"
+    volumes:
+      - db_postgres:/var/lib/postgresql/data
+    networks:
+      - red-application
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Aplicación de Optimización de Rutas
+  application-ruts:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ruta-optima-app
+    restart: unless-stopped
+    depends_on:
+      rutaoptima-db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_HOST_DEV: ${DB_HOST_DEV}
+      DB_HOST_PROD: ${DB_HOST_PROD}
+      DB_URL_PROD: ${DB_URL_PROD}
+      DB_URL_DEV: ${DB_URL_DEV}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      PORT: ${PORT}
+    ports:
+      - "${PORT}:${PORT}"
+    networks:
+      - red-application
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  red-application:
+    name: red-ruta-optima
+    driver: bridge
+
+volumes:
+  db_postgres:
+    name: ruta-optima-data
